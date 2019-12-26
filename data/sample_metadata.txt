@@ -1,0 +1,93 @@
+SampleID	Pool representation	BarcodeSequence	LinkerPrimerSequence	bodysite	Subject	BCS	Nasal_exsudate	Respiratory_rate	Coughing	Auscultation	Description
+q2:types	categorical	categorical	categorical	categorical	categorical	categorical	categorical	categorical	categorical	categorical	categorical
+P1A11	More represented	P1A11.feces	farm1.feces.P1A11	feces	farm1	3	1	0	0	0	feces
+P1A11	More represented	P1A11.rumen	farm1.rumen.P1A11	rumen	farm1	3	1	0	0	0	rumen
+P1A11	More represented	P1A11.SNP	farm1.SNP.P1A11	SNP	farm1	3	1	0	0	0	SNP
+P1A13	More represented	P1A13.feces	farm1.feces.P1A13	feces	farm1	3	1	1	0	0	feces
+P1A13	More represented	P1A13.rumen	farm1.rumen.P1A13	rumen	farm1	3	1	1	0	0	rumen
+P1A13	More represented	P1A13.SNP	farm1.SNP.P1A13	SNP	farm1	3	1	1	0	0	SNP
+P1A14	More represented	P1A14.feces	farm1.feces.P1A14	feces	farm1	3	1	0	0	0	feces
+P1A14	More represented	P1A14.rumen	farm1.rumen.P1A14	rumen	farm1	3	1	0	0	0	rumen
+P1A14	More represented	P1A14.SNP	farm1.SNP.P1A14	SNP	farm1	3	1	0	0	0	SNP
+P1A19	More represented	P1A19.feces	farm1.feces.P1A19	feces	farm1	2.25	1	1	0	2	feces
+P1A19	More represented	P1A19.rumen	farm1.rumen.P1A19	rumen	farm1	2.25	1	1	0	2	rumen
+P1A19	More represented	P1A19.SNP	farm1.SNP.P1A19	SNP	farm1	2.25	1	1	0	2	SNP
+P1A2	More represented	P1A2.feces	farm1.feces.P1A2	feces	farm1	3	1	0	0	0	feces
+P1A2	More represented	P1A2.rumen	farm1.rumen.P1A2	rumen	farm1	3	1	0	0	0	rumen
+P1A2	More represented	P1A2.SNP	farm1.SNP.P1A2	SNP	farm1	3	1	0	0	0	SNP
+P1A20	More represented	P1A20.feces	farm1.feces.P1A20	feces	farm1	3	0	0	0	0	feces
+P1A20	More represented	P1A20.rumen	farm1.rumen.P1A20	rumen	farm1	3	0	0	0	0	rumen
+P1A20	More represented	P1A20.SNP	farm1.SNP.P1A20	SNP	farm1	3	0	0	0	0	SNP
+P1A21	More represented	P1A21.rumen	farm1.rumen.P1A21	rumen	farm1	3	0	1	0	0	rumen
+P1A22	More represented	P1A22.feces	farm1.feces.P1A22	feces	farm1	2	1	0	0	4	feces
+P1A22	More represented	P1A22.rumen	farm1.rumen.P1A22	rumen	farm1	2	1	0	0	4	rumen
+P1A22	More represented	P1A22.SNP	farm1.SNP.P1A22	SNP	farm1	2	1	0	0	4	SNP
+P1A24	More represented	P1A24.feces	farm1.feces.P1A24	feces	farm1	3	0	0	0	0	feces
+P1A24	More represented	P1A24.rumen	farm1.rumen.P1A24	rumen	farm1	3	0	0	0	0	rumen
+P1A24	More represented	P1A24.SNP	farm1.SNP.P1A24	SNP	farm1	3	0	0	0	0	SNP
+P1A25	More represented	P1A25.feces	farm1.feces.P1A25	feces	farm1	3	1	0	0	0	feces
+P1A25	More represented	P1A25.rumen	farm1.rumen.P1A25	rumen	farm1	3	1	0	0	0	rumen
+P1A25	More represented	P1A25.SNP	farm1.SNP.P1A25	SNP	farm1	3	1	0	0	0	SNP
+P1A26	More represented	P1A26.feces	farm1.feces.P1A26	feces	farm1	3	0	0	0	0	feces
+P1A26	More represented	P1A26.rumen	farm1.rumen.P1A26	rumen	farm1	3	0	0	0	0	rumen
+P1A26	More represented	P1A26.SNP	farm1.SNP.P1A26	SNP	farm1	3	0	0	0	0	SNP
+P1A28	More represented	P1A28.feces	farm1.feces.P1A28	feces	farm1	2	1	1	0	0	feces
+P1A28	More represented	P1A28.SNP	farm1.SNP.P1A28	SNP	farm1	2	1	1	0	0	SNP
+P1A29	More represented	P1A29.feces	farm1.feces.P1A29	feces	farm1	2	1	1	0	0	feces
+P1A29	More represented	P1A29.rumen	farm1.rumen.P1A29	rumen	farm1	2	1	1	0	0	rumen
+P1A29	More represented	P1A29.SNP	farm1.SNP.P1A29	SNP	farm1	2	1	1	0	0	SNP
+P1A4	More represented	P1A4.feces	farm1.feces.P1A4	feces	farm1	2.75	0	0	1	0	feces
+P1A4	More represented	P1A4.rumen	farm1.rumen.P1A4	rumen	farm1	2.75	0	0	1	0	rumen
+P1A4	More represented	P1A4.SNP	farm1.SNP.P1A4	SNP	farm1	2.75	0	0	1	0	SNP
+P1A7	More represented	P1A7.feces	farm1.feces.P1A7	feces	farm1	.	0	0	0	0	feces
+P1A7	More represented	P1A7.rumen	farm1.rumen.P1A7	rumen	farm1		0	0	0	0	rumen
+P1A7	More represented	P1A7.SNP	farm1.SNP.P1A7	SNP	farm1	.	0	0	0	0	SNP
+P1A8	More represented	P1A8.feces	farm1.feces.P1A8	feces	farm1	2	1	1	0	1	feces
+P1A8	More represented	P1A8.rumen	farm1.rumen.P1A8	rumen	farm1	2	1	1	0	1	rumen
+P1A8	More represented	P1A8.SNP	farm1.SNP.P1A8	SNP	farm1	2	1	1	0	1	SNP
+P1A9	More represented	P1A9.feces	farm1.feces.P1A9	feces	farm1	3	1	0	0	0	feces
+P1A9	More represented	P1A9.rumen	farm1.rumen.P1A9	rumen	farm1	3	1	0	0	0	rumen
+P1A9	More represented	P1A9.SNP	farm1.SNP.P1A9	SNP	farm1	3	1	0	0	0	SNP
+P2A1	Underrepresented	P2A1.feces	farm2.feces.P2A1	feces	farm2	2	1	1	0	0	feces
+P2A1	Underrepresented	P2A1.rumen	farm2.rumen.P2A1	rumen	farm2	2	1	1	0	0	rumen
+P2A1	Underrepresented	P2A1.SNP	farm2.SNP.P2A1	SNP	farm2	2	1	1	0	0	SNP
+P2A10	Underrepresented	P2A10.feces	farm2.feces.P2A10	feces	farm2	3	0	0	0	0	feces
+P2A10	Underrepresented	P2A10.rumen	farm2.rumen.P2A10	rumen	farm2	2	1	1	0	0	rumen
+P2A10	Underrepresented	P2A10.SNP	farm2.SNP.P2A10	SNP	farm2	3	0	0	0	0	SNP
+P2A14	Underrepresented	P2A14.feces	farm2.feces.P2A14	feces	farm2	1.25	1	1	0	0	feces
+P2A14	Underrepresented	P2A14.rumen	farm2.rumen.P2A14	rumen	farm2	3	0	0	0	0	rumen
+P2A14	Underrepresented	P2A14.SNP	farm2.SNP.P2A14	SNP	farm2	1.25	1	1	0	0	SNP
+P2A16	Underrepresented	P2A16.feces	farm2.feces.P2A16	feces	farm2	3	1	1	0	0	feces
+P2A16	Underrepresented	P2A16.rumen	farm2.rumen.P2A16	rumen	farm2	1.25	1	1	0	0	rumen
+P2A16	Underrepresented	P2A16.SNP	farm2.SNP.P2A16	SNP	farm2	3	1	1	0	0	SNP
+P2A18	Underrepresented	P2A18.feces	farm2.feces.P2A18	feces	farm2	2	1	1	0	0	feces
+P2A18	Underrepresented	P2A18.rumen	farm2.rumen.P2A18	rumen	farm2	3	1	1	0	0	rumen
+P2A18	Underrepresented	P2A18.SNP	farm2.SNP.P2A18	SNP	farm2	2	1	1	0	0	SNP
+P2A19	Underrepresented	P2A19.feces	farm2.feces.P2A19	feces	farm2	3	1	1	0	0	feces
+P2A19	Underrepresented	P2A19.rumen	farm2.rumen.P2A19	rumen	farm2	2	1	1	0	0	rumen
+P2A19	Underrepresented	P2A19.SNP	farm2.SNP.P2A19	SNP	farm2	3	1	1	0	0	SNP
+P2A20	Underrepresented	P2A20.feces	farm2.feces.P2A20	feces	farm2	3	1	1	0	2	feces
+P2A20	Underrepresented	P2A20.rumen	farm2.rumen.P2A20	rumen	farm2	3	1	1	0	0	rumen
+P2A20	Underrepresented	P2A20.SNP	farm2.SNP.P2A20	SNP	farm2	3	1	1	0	2	SNP
+P2A21	Underrepresented	P2A21.feces	farm2.feces.P2A21	feces	farm2	2	1	1	0	0	feces
+P2A21	Underrepresented	P2A21.rumen	farm2.rumen.P2A21	rumen	farm2	3	1	1	0	2	rumen
+P2A21	Underrepresented	P2A21.SNP	farm2.SNP.P2A21	SNP	farm2	2	1	1	0	0	SNP
+P2A22	Underrepresented	P2A22.feces	farm2.feces.P2A22	feces	farm2	2	1	1	0	.	feces
+P2A22	Underrepresented	P2A22.rumen	farm2.rumen.P2A22	rumen	farm2	2	1	1	0	0	rumen
+P2A22	Underrepresented	P2A22.SNP	farm2.SNP.P2A22	SNP	farm2	2	1	1	0	.	SNP
+P2A26	Underrepresented	P2A26.feces	farm2.feces.P2A26	feces	farm2	3	1	1	0	0	feces
+P2A26	Underrepresented	P2A26.rumen	farm2.rumen.P2A26	rumen	farm2	2	1	1	0	.	rumen
+P2A26	Underrepresented	P2A26.SNP	farm2.SNP.P2A26	SNP	farm2	3	1	1	0	0	SNP
+P2A27	Underrepresented	P2A27.feces	farm2.feces.P2A27	feces	farm2	3	1	.	0	0	feces
+P2A27	Underrepresented	P2A27.rumen	farm2.rumen.P2A27	rumen	farm2	3	1	1	0	0	rumen
+P2A27	Underrepresented	P2A27.SNP	farm2.SNP.P2A27	SNP	farm2	3	1	.	0	0	SNP
+P2A28	Underrepresented	P2A28.feces	farm2.feces.P2A28	feces	farm2	3	1	1	0	0	feces
+P2A28	Underrepresented	P2A28.rumen	farm2.rumen.P2A28	rumen	farm2	3	1	.	0	0	rumen
+P2A28	Underrepresented	P2A28.SNP	farm2.SNP.P2A28	SNP	farm2	3	1	1	0	0	SNP
+P2A29	Underrepresented	P2A29.feces	farm2.feces.P2A29	feces	farm2	3	1	0	0	0	feces
+P2A29	Underrepresented	P2A29.rumen	farm2.rumen.P2A29	rumen	farm2	3	1	1	0	0	rumen
+P2A29	Underrepresented	P2A29.SNP	farm2.SNP.P2A29	SNP	farm2	3	1	0	0	0	SNP
+P2A7	Underrepresented	P2A7.feces	farm2.feces.P2A7	feces	farm2	2	0	1	0	0	feces
+P2A7	Underrepresented	P2A7.SNP	farm2.SNP.P2A7	SNP	farm2	2	0	1	0	0	SNP
+P2A9	Underrepresented	P2A9.feces	farm2.feces.P2A9	feces	farm2	3	0	0	0	0	feces
+P2A9	Underrepresented	P2A9.SNP	farm2.SNP.P2A9	SNP	farm2	3	0	0	0	0	SNP
