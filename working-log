@@ -1,0 +1,5 @@
+## Log file of command line for AMR shotgun project
+
+1. Inspect read quality with FastQC
+
+module load FastQC
