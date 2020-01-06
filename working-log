@@ -1,5 +1,10 @@
-## Log file of command line for AMR shotgun project
+### Log file of command line for AMR shotgun project
+
+**working directory: /gpfs/group/evk5387/default/emily/**
 
 1. Inspect read quality with FastQC
+  * combine all forward reads into one file: ``
 
-module load FastQC
+
+
+Link to bovine genome: https://www.ncbi.nlm.nih.gov/assembly/GCF_002263795.1/
