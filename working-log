@@ -1,10 +1,13 @@
 ### Log file of command line for AMR shotgun project
 
-**working directory: /gpfs/group/evk5387/default/emily/**
+# get sequence statistics on all fastq files
+ ls -1 *.fastq.gz | sort | parallel --progress --verbose -j 10 "seqkit stats {} >> stats.txt"
 
-1. Inspect read quality with FastQC
-  * combine all forward reads into one file: ``
+ # remove "file" line from within stats.txt
+ cat stats.txt | (head -1 && grep -v "file" ) > rawstats.txt
 
+ # perform fastqc on all files, view some in web browser
+ # quality does not seem to be a problem at all; only minimum read length
+ # all reads have minimum read length of 0
 
-
-Link to bovine genome: https://www.ncbi.nlm.nih.gov/assembly/GCF_002263795.1/
+ # trim reads with Trimmomatic
