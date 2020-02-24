@@ -1,13 +1,30 @@
 ### Log file of command line for AMR shotgun project
 
+# get list of reads
+cd ~/work/amrbrazil/reads
+ls *.fastq > samplist
+
 # get sequence statistics on all fastq files
- ls -1 *.fastq.gz | sort | parallel --progress --verbose -j 10 "seqkit stats {} >> stats.txt"
+ls -1 *.fastq.gz | sort | parallel --progress --verbose -j 10 "seqkit stats {} >> stats.txt"
 
- # remove "file" line from within stats.txt
- cat stats.txt | (head -1 && grep -v "file" ) > rawstats.txt
+# remove "file" line from within stats.txt
+cat stats.txt | (head -1 && grep -v "file" ) > rawstats.txt
 
- # perform fastqc on all files, view some in web browser
- # quality does not seem to be a problem at all; only minimum read length
- # all reads have minimum read length of 0
+# perform fastqc on all files, view some in web browser
+# quality does not seem to be a problem at all; only minimum read length
+# all reads have minimum read length of 0
+# need to remove the short reads first
 
- # trim reads with Trimmomatic
+# trim reads with Trimmomatic for minimum length only
+trimmomatic PE read1 read2 -baseout basename.fastq MINLEN:50
+
+## 2/24 problem: two .fastq reads are corrupted - need to be re-copied over from ACI
+# G527_13_P1A4_feces_S13_R2_001.fastq
+# G527_14_P1A7_feces_S14_R1_001.fastq
+##DELETING FOR NOW
+
+## FULL PIPELINE ON THE FIRST 10 FILES
+# first get the basenames to do trimmomatic on paired end reads
+cat samplist | grep "R1" |  sed 's/_R1_001.fastq.gz//' > basenames
+
+# Trimmomaticcat basenames | head -10 | parallel --progress trimmomatic PE ./reads/{}_R1_001.fastq.gz ./reads/{}_R2_001.fastq.gz -baseout trimmed/trim_{}.fastq.gz MINLEN:50
