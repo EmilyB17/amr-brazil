@@ -66,3 +66,27 @@ ggplot(data = subdat, aes(x = gene, y = count, fill = drug)) +
 # Hypothesis testing: ANOVA
 mod <- aov(count ~ sample + class + drug + protein + gene, data = sampdat)
 summary(mod)
+
+## ---- metadata ----
+
+# This is just annotations - I already have it
+met <- read.csv("megares_modified_annotations_v2.00.csv")
+
+# this shows what genes are coming from which database
+# this likely explains the double-counting of some genes
+met1 <- read.csv("megares_to_external_header_mappings_v2.00.csv",
+                 stringsAsFactors = FALSE)
+
+## test the theory - do the double-counted genes come from different databases?
+
+# get unique megIDS
+megids <- unique(fulldat$megID)
+
+# parse unique megids from met1 
+dbs <- met1 %>% 
+  mutate(megID = sapply(strsplit(met1$MEGARes_v2_header, split = "\\|"), `[`, 1))
+
+# get matching megIDS
+matched <- dbs[dbs$megID %in% megids, ]
+
+# CONFIRMED - each unique mutation described in CARD is collapsed into one category in MEGARES but assigned a different megID
