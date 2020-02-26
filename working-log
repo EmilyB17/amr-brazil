@@ -27,4 +27,17 @@ trimmomatic PE read1 read2 -baseout basename.fastq MINLEN:50
 # first get the basenames to do trimmomatic on paired end reads
 cat samplist | grep "R1" |  sed 's/_R1_001.fastq.gz//' > basenames
 
-# Trimmomaticcat basenames | head -10 | parallel --progress trimmomatic PE ./reads/{}_R1_001.fastq.gz ./reads/{}_R2_001.fastq.gz -baseout trimmed/trim_{}.fastq.gz MINLEN:50
+# Trimmomatic
+cat basenames | head -10 | parallel --progress trimmomatic PE ./reads/{}_R1_001.fastq.gz ./reads/{}_R2_001.fastq.gz -baseout trimmed/trim_{}.fastq.gz MINLEN:50
+# get stats on the trimmed reads
+seqkit stats trim_G527_1*_?P.fastq.gz -j 20 > trimstats.txt
+
+# FLASH to merge reads
+flash input1 input2 --output-prefix basename --threads
+mkdir merge
+cat ../basenames | head -10 | parallel --progress flash ../trimmed/trim_{}_1P.fastq.gz ../trimmed/trim_{}_2P.fastq.gz --output-prefix {} --threads 5 --max-overlap 150
+# NOTE: stopped this in the middle b/c ~60% of reads were merging
+# get stats on the merged threads
+seqkit stats *.extendedFrags.fastq -j 20 > mergestats.txt
+
+# BLASTN on MEGARES database
