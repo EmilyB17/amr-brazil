@@ -1,0 +1,130 @@
+---
+title: "BLAST Output Parsing"
+author: "Emily Bean"
+date: "3/11/2020"
+output: 
+  rmarkdown::github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Overview
+
+This script parses the output from the custom BLAST alignment and combines all samples into one spreadsheet. Data has been downloaded locally from PSU ACI-ICDS storage and runs from a local repo clone directory. the BlAST output text files are about 5GB.
+
+```{r}
+
+require(dplyr)
+require(stringr)
+
+# set working directory to local Github repo clone
+PATH = "~/git/amr-brazil/"
+
+# read MEGARES external DB key
+# read in annotations CSV
+ids <- read.csv("./data/megares_to_external_header_mappings_v2.00.csv",
+                 stringsAsFactors = FALSE)
+
+# list input files
+filesPATH = paste0(PATH, "data/blast-output")
+
+# get files from the path 
+files <- list.files(filesPATH, full.names = TRUE)
+
+# error check: is each file unique (no duplicates)?
+if(!length(unique(files)) == length(files)) {
+  
+  stop("There are duplicate files")
+  
+}
+```
+
+
+A loop reads in each file and wrangles it to get the counts for each gene. This is computationally expensive and not ideal to run in RStudio.
+
+Output is two dataframes: `countsDF` holds gene counts for each unique gene and sample, with total number of hits for that sample (for downstream normalization). `lengthDF` holds the length of each megID gene. 
+
+```{r}
+
+# create empty dataframe to fill with gene counts
+countsDF <- data.frame()
+# create empty dataframe to fill with gene length
+lengthDF <- data.frame()
+
+# read in each file and parse
+for(i in 1:length(files)) {
+  
+  # read the file
+  dat <- read.table(files[i], header = FALSE, stringsAsFactors = FALSE, sep = "\t")
+  
+  # assign column names
+  colnames(dat) <- c("readID", "megID", "pident", "slen", "qcovs", "qcovhsp", "qcovus")
+  
+  # parse subject length
+  slens <- dat %>% 
+    select(megID, slen) %>% 
+    distinct()
+  
+  # get subject length (gene length) for each megID
+  megdat <- dat %>% 
+    group_by(megID) %>% 
+    summarize(idcount = n()) %>% 
+    right_join(slens, by = "megID") %>% 
+    # add sample name
+    mutate(sample = files[i])
+  
+  # get the pattern without megID
+  # this is an important grouping variable since multiple megIDs map to a single gene
+  dat$pattern <- sapply(strsplit(dat$megID, "MEG_[0-9]+\\|"), `[`, 2)
+  
+  # group by pattern
+  sumdat <- dat %>% 
+    # get number of gene hits
+    group_by(pattern) %>% 
+    summarize(count = n()) %>% 
+    ungroup() %>% 
+    # add sample name and read length
+    mutate(nhits = nrow(dat),
+           sample = files[i])
+  
+  # append to output file
+  countsDF <- rbind(sumdat, countsDF)
+  lengthDF <- rbind(megdat, lengthDF)
+  
+  # print progress report
+  cat("\n finished parsing", files[i], "... \n")
+  
+}
+
+# make dataframe horizontal
+countsDFh <- countsDF %>% 
+  # get the sample name to make it shorter
+  mutate(name = sapply(strsplit(sapply(strsplit(countsDF$sample, "/"), `[`, 8), ".txt"), `[`, 1)) %>% 
+  select(-c(sample, nhits)) %>% 
+  # spread horizontally 
+  spread(key = name, value = "count") %>% 
+  # replace NAs with zeros
+  mutate_at(vars(2:ncol(countsDFh)), replace_na, 0)
+
+```
+
+
+To normalize by sequencing depth, we need number of reads for each sample. This was done on the command line with `seqkit stats` on the merged reads and written to text file. Here we will briefly parse it to work with. 
+
+```{r}
+
+# read merged stats df
+seqs <- read.table("./data/mergestats.txt", stringsAsFactors = FALSE, header = TRUE)  %>% 
+  filter(!file == "file") 
+seqs <- seqs %>% 
+  mutate(name = sapply(strsplit(sapply(strsplit(seqs$file, "/"), `[`, 7), ".extendedFrags.fastq"), `[`, 1)) %>% 
+  select(name, num_seqs) 
+
+# convert character vector to integer
+seqs$length <- as.integer(str_remove_all(seqs$num_seqs, ","))
+seqs$num_seqs <- NULL
+
+```
+
