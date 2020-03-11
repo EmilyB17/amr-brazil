@@ -6,7 +6,7 @@ require(tidyr)
 require(ggplot2)
 
 # set wd
-setwd("C:/Users/emily/AppData/Local/Packages/CanonicalGroupLimited.UbuntuonWindows_79rhkp1fndgsc/LocalState/rootfs/home/emily/megares")
+setwd("C:/Users/emily/AppData/Local/Packages/CanonicalGroupLimited.UbuntuonWindows_79rhkp1fndgsc/LocalState/rootfs/home/emily")
 
 # read results dataframe
 dat <- read.table("out.txt", sep = "\t", stringsAsFactors = FALSE, header = FALSE)
