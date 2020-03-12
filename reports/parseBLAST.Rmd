@@ -20,11 +20,11 @@ require(dplyr)
 require(stringr)
 
 # set working directory to local Github repo clone
-PATH = "~/git/amr-brazil/"
+PATH = "C:/Users/emily/OneDrive - The Pennsylvania State University/Research/git/amr-brazil/"
 
 # read MEGARES external DB key
 # read in annotations CSV
-ids <- read.csv("./data/megares_to_external_header_mappings_v2.00.csv",
+ids <- read.csv(paste0(PATH, "data/megares_to_external_header_mappings_v2.00.csv"),
                  stringsAsFactors = FALSE)
 
 # list input files
@@ -116,7 +116,7 @@ To normalize by sequencing depth, we need number of reads for each sample. This 
 ```{r}
 
 # read merged stats df
-seqs <- read.table("./data/mergestats.txt", stringsAsFactors = FALSE, header = TRUE)  %>% 
+seqs <- read.table(paste0(PATH, "data/mergestats.txt"), stringsAsFactors = FALSE, header = TRUE)  %>% 
   filter(!file == "file") 
 seqs <- seqs %>% 
   mutate(name = sapply(strsplit(sapply(strsplit(seqs$file, "/"), `[`, 7), ".extendedFrags.fastq"), `[`, 1)) %>% 
