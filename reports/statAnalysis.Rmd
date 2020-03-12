@@ -1,0 +1,83 @@
+---
+title: "AMR Analysis"
+author: "Emily Bean"
+date: "March 12, 2020"
+output: 
+  rmarkdown::github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, fig.align = "center")
+
+require(dplyr)
+require(tidyr)
+require(stringr)
+require(ggplot2)
+
+# read in data
+counts <- read.table("https://github.com/EmilyB17/amr-brazil/blob/master/data/parsedGeneCounts.txt?raw=true", sep = "\t", header = TRUE)
+
+```
+
+## Analysis Structure
+
+**Comparisons**  
+
+Pairwise comparisons between Farm 1 and Farm 2.  
+Comparisons between body sites (rumen, feces, nasal swab) at each farm.  
+
+MEGARES database categories include: type of resistance, resistance class within type (i.e. type of drug within Drug resistance), protein class, and gene. Pairwise comparisons can be made for all of these but it seems to make the most biological sense to compare genes, protein classes, and resistance classes.  
+
+***
+Therefore, here is the proposed comparison structure:  
+Genes: Farm 1 vs Farm 2  
+Proteins: Farm 1 vs Farm 2  
+Resistance class: Farm 1 vs Farm 2  
+
+Genes: SNP vs Rumen vs Feces (Farm 1 and Farm 2)  
+Proteins: SNP vs Rumen vs Feces (Farm 1 and Farm 2)  
+Resistance class: SNP vs Rumen vs Feces (Farm 1 and Farm 2)  
+
+***
+
+There are negative and positive controls that need to be accounted for. 
+
+
+**Data normalization**  
+
+1. Normalize to gene length by dividing gene count by the average gene length (note: MEGARES database combines all SNP mutations from other databases into one gene category, so gene lengths differ for each mutation).  
+2. Normalize to sequencing depth by dividing gene count by the number of reads in each sample (number of reads after trimming and merging).  
+3. No normalization; gene count only.  
+
+**Linear regression assumptions**  
+
+The gene count data is very zero skewed, a log transformation helps. We may be better off with non-parametric comparisons than trying to further transform the data.
+
+
+### Data Exploration  
+
+```{r}
+
+# in the entire dataset, there are 174 unique proteins in 3 classes
+exp <- counts %>% 
+  group_by(class, type, protein) %>% 
+  summarize()
+
+# show unique proteins
+knitr::kable(exp)
+```
+
+```{r}
+# data is not normally distributed and is very zero-skewed
+hist(counts$count, main = "Histogram of gene counts",
+     xlab = "Gene count", ylab = "Frequency")
+```
+
+```{r}
+# Log transformation helps (somewhat)
+hist(log1p(counts$count), main = "Histogram of log-transformed gene counts",
+     xlab = "Log gene count", ylab = "Frequency")
+```
+
+
+The data above only accounts for the genes that are present within each sample; i.e., there is no penalization for a sample that does not have genes that are present within another sample.
