@@ -18,9 +18,10 @@ This script parses the output from the custom BLAST alignment and combines all s
 
 require(dplyr)
 require(stringr)
+require(tibble)
 
 # set working directory to local Github repo clone
-PATH = "C:/Users/emily/OneDrive - The Pennsylvania State University/Research/git/amr-brazil/"
+PATH = "C:/Users/emily/AppData/Local/Packages/CanonicalGroupLimited.UbuntuonWindows_79rhkp1fndgsc/LocalState/rootfs/home/emily/blasted"
 
 # read MEGARES external DB key
 # read in annotations CSV
@@ -65,7 +66,9 @@ for(i in 1:length(files)) {
   # parse subject length
   slens <- dat %>% 
     select(megID, slen) %>% 
-    distinct()
+    # get the minimum gene length for each megID
+    group_by(megID) %>% 
+    summarize(minlen = min(slen))
   
   # get subject length (gene length) for each megID
   megdat <- dat %>% 
@@ -75,16 +78,20 @@ for(i in 1:length(files)) {
     # add sample name
     mutate(sample = files[i])
   
-  # get the pattern without megID
-  # this is an important grouping variable since multiple megIDs map to a single gene
-  dat$pattern <- sapply(strsplit(dat$megID, "MEG_[0-9]+\\|"), `[`, 2)
   
-  # group by pattern
-  sumdat <- dat %>% 
-    # get number of gene hits
-    group_by(pattern) %>% 
-    summarize(count = n()) %>% 
+  # group by megID and then by pattern
+  sumdat <- megdat %>% 
+    # get number of megID hits with each gene length
+    group_by(megID, minlen) %>% 
+    summarize(count = sum(idcount)) %>% 
     ungroup() %>% 
+    # get the pattern without megID
+    # this is an important grouping variable since multiple megIDs map to a single gene
+    mutate(pattern = factor(sapply(strsplit(megID, "MEG_[0-9]+\\|"), `[`, 2))) %>% 
+    # group by pattern
+    group_by(pattern) %>% 
+    summarize(genecount = sum(count),
+              genelen = min(minlen)) %>% 
     # add sample name and read length
     mutate(nhits = nrow(dat),
            sample = files[i])
@@ -97,16 +104,6 @@ for(i in 1:length(files)) {
   cat("\n finished parsing", files[i], "... \n")
   
 }
-
-# make dataframe horizontal
-countsDFh <- countsDF %>% 
-  # get the sample name to make it shorter
-  mutate(name = sapply(strsplit(sapply(strsplit(countsDF$sample, "/"), `[`, 8), ".txt"), `[`, 1)) %>% 
-  select(-c(sample, nhits)) %>% 
-  # spread horizontally 
-  spread(key = name, value = "count") %>% 
-  # replace NAs with zeros
-  mutate_at(vars(2:ncol(countsDFh)), replace_na, 0)
 
 ```
 
@@ -125,6 +122,145 @@ seqs <- seqs %>%
 # convert character vector to integer
 seqs$length <- as.integer(str_remove_all(seqs$num_seqs, ","))
 seqs$num_seqs <- NULL
+
+# write to table
+
+```
+
+Subset data to get only the number of gene alignments for each sample
+
+```{r}
+
+# get only number of hits per sample
+hits <- countsDF %>% select(sample, nhits) %>% 
+  mutate(name = sapply(strsplit(sapply(strsplit(countsDF$sample, "/"), `[`, 13), ".txt"), `[`, 1)) %>% 
+  select(-sample) %>% 
+  group_by(name) %>% 
+  distinct() %>% 
+  ungroup()
+
+```
+
+There were several control samples and a sample from another study ("Alien") added. 
+
+```{r}
+# pick out control samples
+controls <- paste("G527_94_NoTemplate-DNAextraction2_S94",
+                  "G527_96_NoTemplate-LibraryPrep_S96",
+                  "G527_95_MockCommunity_S95",
+                  "G527_93_NoTemplate-DNAextraction1_S93",
+                  "G527_49_2019_DNA_S49", sep = "|")
+
+# get dataframe without controls or Alien sample
+nocontrols <- countsDF %>% 
+  mutate(name = sapply(strsplit(sapply(strsplit(countsDF$sample, "/"), `[`, 13), ".txt"), `[`, 1)) %>% 
+  filter(!str_detect(name, controls))
+
+# get dataframe of controls only
+controlsDF <- countsDF %>% 
+  mutate(name = sapply(strsplit(sapply(strsplit(countsDF$sample, "/"), `[`, 13), ".txt"), `[`, 1)) %>% 
+  filter(str_detect(name, controls)) %>% 
+  # remove Alien sample
+  filter(!str_detect(name, "G527_49_2019_DNA_S49"))
+
+```
+
+This data needs to be normalized to both gene length and sequencing depth. This chunk calculates several types of normalization.
+
+```{r}
+
+normcounts <- countsDF %>% 
+  # get name from the entire sample path
+  mutate(name = sapply(strsplit(sapply(strsplit(countsDF$sample, "/"), `[`, 13), ".txt"), `[`, 1))  %>% 
+  select(-sample) %>% 
+  # remove Alien sample
+  filter(!str_detect(name, "G527_49_2019_DNA_S49")) %>% 
+  # add sequence length
+  left_join(seq, by = "name") %>% 
+ 
+  mutate(pscount = genecount + 1,
+         logpscount = log1p(pscount),
+         # normalize to gene length
+         normgenelen = case_when(
+           genecount == 0 ~ 0, # if there are no hits, keep 0
+           genecount != 0 ~ genecount / genelen # else, divide by gene length
+         ),
+         # normalize raw data
+         normseqdepth = case_when(
+           genecount == 0 ~ 0,
+           genecount != 0 ~ genecount / length),
+         # normalize the gene length normalized
+         normall = case_when(
+           normgenelen == 0 ~ 0,
+           normgenelen != 0 ~ normgenelen / length
+         )
+         ) %>% 
+  # keep only all normalization
+  select(pattern, name, normall)
+
+```
+
+Next, calculate relative abundance for all genes. This is calculated by "range", so the sample with the highest relative abundance is set to 1, and all other samples are scaled between 0 and 1. Samples with no alignments to that gene remain at 0.
+
+```{r}
+
+# make the dataframe horizontal to calculate relative abundance
+normh <- normcounts %>% 
+  pivot_wider(names_from = pattern, values_from = normall, values_fill = list(normall = 0)) %>% 
+  # decostand() requires a matrix, so make the names into rownames
+  column_to_rownames(var = "name")
+
+# calculate relative abundance
+relabun <- decostand(normh, method = "range", MARGIN = 2) %>% 
+  # bring back the names column
+  rownames_to_column(var = "name")
+
+```
+
+Finally, get the metadata information about resistance classes and metadata from the sample name.
+
+```{r}
+
+# parse out name into metadata
+relv <- relabun %>% 
+  pivot_longer(cols = -name, names_to = "pattern", values_to = "relabun") %>% 
+  mutate(
+    ## MEGARES 
+    # resistance class
+    broadclass = sapply(str_split(pattern, "\\|"), `[`, 1),
+    # type of resistance
+    type = sapply(str_split(pattern, "\\|"), `[`, 2),
+    # protein
+    protein = sapply(str_split(pattern, "\\|"), `[`, 3),
+    # gene
+    gene = sapply(str_split(pattern, "\\|"), `[`, 4),
+    ## SAMPLE METADATA
+    # farm number
+    farm = case_when(
+      # if the sample is a control, name it "control"
+      str_detect(name, controls) ~ "control",
+      # otherwise, detect the farm number
+      !str_detect(name, controls) ~ str_remove(str_extract(name, "P(\\d)"), "P")
+    ),
+    # animal number
+    animal = case_when(
+      # if the sample is a control, name it "control"
+      str_detect(name, controls) ~ "control",
+      # otherwise, detect the animal number
+      !str_detect(name, controls) ~ str_remove(str_extract(name, "A(\\d{1,2})"), "A")
+    ),
+    # sample number - this does NOT matter if it's control or not
+    samplenum = sapply(str_split(name, "_"), `[`, 2),
+    # body site
+    site = case_when(
+      # if the sample is a control, name it "control"
+      str_detect(name, controls) ~ "control",
+      # otherwise, detect the animal number
+      !str_detect(name, controls) ~ sapply(str_split(name, "_"), `[`, 4)
+    )
+  # close mutate() parenthesis
+  )
+
 
 ```
 
