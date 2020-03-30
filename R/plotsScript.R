@@ -83,3 +83,50 @@ ggplot(data = filter(sumv, type == "Multi-drug_resistance"),
 # save
 ggsave("./data/plots/relabun-boxplot-body-site.png", plot = last_plot(),
        width = 6, height = 5, units = "in")
+
+
+#### ---- read count per farm ----
+
+# load un-normalized data
+load("C:/Users/emily/OneDrive - The Pennsylvania State University/Research/git/amr-brazil/R/genecountsENV.RData")
+
+# get list of controls
+controls <- paste("G527_94_NoTemplate-DNAextraction2_S94",
+                  "G527_96_NoTemplate-LibraryPrep_S96",
+                  "G527_95_MockCommunity_S95",
+                  "G527_93_NoTemplate-DNAextraction1_S93",
+                  "G527_49_2019_DNA_S49", sep = "|")
+
+# un-normalized count data: countsDF
+# get count of total AMR genes for each farm
+amr <- countsDF %>% 
+  # get total counts
+  select(sample, nhits) %>% 
+  group_by(sample) %>% 
+  distinct() %>% 
+  # parse out each sample to get "farm" only
+  mutate(name = sapply(str_split(sapply(str_split(sample, "/"), `[`, 13), ".txt"), `[`, 1)) %>% 
+  # remove controls
+  filter(!str_detect(name, controls)) %>% 
+  mutate(farm = str_remove(str_extract(name, "P(\\d)"), "P")) %>% 
+  # get counts per farm 
+  group_by(farm) %>% 
+  summarize(namrfarm = sum(nhits))
+
+# get sequencing depth for each sample
+seqs <- read.table("./data/sampleDepth.txt", sep = "\t", header = TRUE) %>% 
+  # parse to get farm
+  filter(!str_detect(name, controls)) %>% 
+  mutate(farm = str_remove(str_extract(name, "P(\\d)"), "P")) %>% 
+  # get counts by farm
+  group_by(farm) %>% 
+  summarize(nreads = sum(length))
+
+# put it together into one table
+tab <- amr %>% merge(seqs, by = "farm") %>% 
+  mutate("Percent AMR" = round(namrfarm / nreads, 3)) %>% 
+  rename("AMR gene alignments" = namrfarm,
+         "Total reads" = nreads) 
+
+# write to file
+write.table(tab, "./data/percentAMRofTotalReads.txt", sep = "\t", row.names = FALSE)

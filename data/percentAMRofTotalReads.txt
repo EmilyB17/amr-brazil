@@ -1,0 +1,3 @@
+"farm"	"AMR gene alignments"	"Total reads"	"Percent AMR"
+"1"	31341508	1908100170	0.016
+"2"	5197520	358414832	0.015
