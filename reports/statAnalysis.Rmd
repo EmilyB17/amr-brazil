@@ -29,6 +29,7 @@ Comparisons between body sites (rumen, feces, nasal swab) at each farm.
 MEGARES database categories include: type of resistance, resistance class within type (i.e. type of drug within Drug resistance), protein class, and gene. Pairwise comparisons can be made for all of these but it seems to make the most biological sense to compare genes, protein classes, and resistance classes.  
 
 ***
+
 Therefore, here is the proposed comparison structure:  
 Genes: Farm 1 vs Farm 2  
 Proteins: Farm 1 vs Farm 2  
@@ -81,3 +82,25 @@ hist(log1p(counts$count), main = "Histogram of log-transformed gene counts",
 
 
 The data above only accounts for the genes that are present within each sample; i.e., there is no penalization for a sample that does not have genes that are present within another sample.
+
+To address this, add a **psuedocount** to each gene count. 
+
+```{r}
+
+# add psuedocount and make horizontal
+ch <- counts %>% 
+  group_by(class, type, protein, gene, farm, animal, sample, site, nhits) %>% 
+  summarize(n = n()) %>% 
+  ungroup() %>% 
+  mutate(pscount = n + 5,
+         psnhits = nhits + 5) %>% 
+  select(-c(n, nhits)) %>% 
+  pivot_wider(names_from = sample, values_from = pscount, values_fill= list(pscount = 5), names_prefix = "samp_")
+
+# make vertical and add log transformation
+chl <- ch %>% 
+  pivot_longer(cols = starts_with("samp_"), names_to = "sample", names_prefix = "samp_", values_to = "pscount") %>% 
+  mutate(logpscount = log1p(pscount))
+
+```
+

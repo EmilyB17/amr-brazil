@@ -25,14 +25,11 @@ PATH = "C:/Users/emily/AppData/Local/Packages/CanonicalGroupLimited.UbuntuonWind
 
 # read MEGARES external DB key
 # read in annotations CSV
-ids <- read.csv(paste0(PATH, "data/megares_to_external_header_mappings_v2.00.csv"),
-                 stringsAsFactors = FALSE)
+#ids <- read.csv(paste0(PATH, "data/megares_to_external_header_mappings_v2.00.csv"),             stringsAsFactors = FALSE)
 
-# list input files
-filesPATH = paste0(PATH, "data/blast-output")
 
 # get files from the path 
-files <- list.files(filesPATH, full.names = TRUE)
+files <- list.files(PATH, full.names = TRUE)
 
 # error check: is each file unique (no duplicates)?
 if(!length(unique(files)) == length(files)) {
@@ -40,6 +37,10 @@ if(!length(unique(files)) == length(files)) {
   stop("There are duplicate files")
   
 }
+
+# read in sequencing depth of each sample
+seqs <- read.table("https://raw.githubusercontent.com/EmilyB17/amr-brazil/master/data/sampleDepth.txt", sep = "\t", header = TRUE, stringsAsFactors = FALSE)
+
 ```
 
 
@@ -110,7 +111,7 @@ for(i in 1:length(files)) {
 
 To normalize by sequencing depth, we need number of reads for each sample. This was done on the command line with `seqkit stats` on the merged reads and written to text file. Here we will briefly parse it to work with. 
 
-```{r}
+```{#r}
 
 # read merged stats df
 seqs <- read.table(paste0(PATH, "data/mergestats.txt"), stringsAsFactors = FALSE, header = TRUE)  %>% 
@@ -176,7 +177,7 @@ normcounts <- countsDF %>%
   # remove Alien sample
   filter(!str_detect(name, "G527_49_2019_DNA_S49")) %>% 
   # add sequence length
-  left_join(seq, by = "name") %>% 
+  left_join(seqs, by = "name") %>% 
  
   mutate(pscount = genecount + 1,
          logpscount = log1p(pscount),
@@ -261,6 +262,15 @@ relv <- relabun %>%
   # close mutate() parenthesis
   )
 
+
+```
+
+```{#r}
+
+# write this table to file
+
+write.table(relv, file = "C:/Users/emily/OneDrive - The Pennsylvania State University/Research/git/amr-brazil/data/parsedRelativeAbundance.txt", sep = "\t",
+            row.names = FALSE)
 
 ```
 

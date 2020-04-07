@@ -4,7 +4,7 @@
 dat <- read.table("./parse/G527_10_P1A26_feces_S10.txt", header = FALSE, stringsAsFactors = FALSE)
 
 # read in annotations CSV
-ids <- read.csv("./megares/megares_to_external_header_mappings_v2.00.csv",
+ids <- read.csv("./data/megares_to_external_header_mappings_v2.00.csv",
                  stringsAsFactors = FALSE)
 
 # get unique genes (database has duplicates)
@@ -77,6 +77,4 @@ seqs <- read.table("./parse/mergestats.txt", stringsAsFactors = FALSE, header = 
 
 seqs$length <- as.integer(str_remove_all(seqs$num_seqs, ","))
 
-# merge
-both <- outDF %>% 
-  mutate(name = sapply(strsplit(sapply(strsplit(outDF$sample, "/"), `[`, 13)), ))
+

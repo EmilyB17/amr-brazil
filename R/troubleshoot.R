@@ -3,13 +3,13 @@
 # run parsingScript loop on one file
 
 ## what is happening with multiple lengths
-tshoot <- lendat %>% group_by(pattern) %>% 
+tshoot <- dat %>% group_by(megID) %>% 
   summarize(rangelo = range(slen)[1],
             rangehi = range(slen)[2]) %>% 
   mutate(matched = case_when(
     rangelo == rangehi ~ "match",
     rangelo != rangehi ~ "miss"
-  )) %>% 
+  ))# %>% 
   filter(matched == "miss")
 
 
