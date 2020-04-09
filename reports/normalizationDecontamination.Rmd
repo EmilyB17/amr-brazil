@@ -1,0 +1,318 @@
+---
+title: "Decontamination & Normalization"
+author: "Emily Bean"
+date: "4/8/2020"
+output: 
+  rmarkdown::github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Overview
+
+This script loads an R environment containing all samples. The BLAST aligments have been parsed and collected into one dataframe (see `parseBLAST.Rmd`). This script detects and removes contaminant sequences using the `decontam` Bioconductor package, and then normalizes to gene count and sequencing depth. Finally, relative abundance is calculated on the normalized data to scale it while keeping important presence/absence information.
+
+There are 3 negative controls (2 DNA extraction controls & 1 PCR control) and 1 positive control (mock community). For more information about the genes detected in the controls, see `controlsReport.Rmd`.
+
+```{r}
+
+# load packages and read data
+require(phyloseq)
+require(ggplot2)
+require(tidyverse) 
+require(decontam)
+require(vegan)
+
+# load data
+load("~/git/amr-brazil/R/genecountsENV.RData")
+
+# set ggplot theme
+theme_set(theme_bw())
+
+```
+
+## Decontamination
+
+To detect contaminant sequences, we use the `decontam` package to compare the prevalence of genes found in the known negative controls to the prevalence of those genes in the positive samples. For this, the mock community sample is treated as a true positive. 
+Note: decontamination is performed on raw gene counts and normalization is performed later.
+
+First, the gene counts need to be converted to a `phyloseq` object.
+
+```{r}
+
+## create phyloseq object
+
+# use the countsDF dataframe to create sampcounts dataframe
+sampcounts <- countsDF %>% 
+  # add Name column
+  mutate(name = sapply(strsplit(sapply(strsplit(countsDF$sample, "/"), `[`, 13), ".txt"), `[`, 1)) %>% 
+  # remove Alien sample (not in our dataset)
+  filter(!name == "G527_49_2019_DNA_S49") %>% 
+  # remove mock community (positive control) 
+  filter(!name == "G527_95_MockCommunity_S95")
+
+# otu table
+otu <- sampcounts %>% 
+  #mutate(name = sapply(strsplit(sapply(strsplit(sampcounts$sample, "/"), `[`, 13), ".txt"), `[`, 1)) %>% 
+  select(name, pattern, genecount) %>% 
+  group_by(pattern) %>% 
+  pivot_wider(names_from = name, values_from = genecount, values_fill = list(genecount = 0)) %>% 
+  column_to_rownames(var = "pattern")
+otu <- as.matrix(otu)
+otutab <- otu_table(otu, taxa_are_rows = TRUE)
+
+# taxa
+tax <- sampcounts %>% 
+  #mutate(name = sapply(strsplit(sapply(strsplit(sampcounts$sample, "/"), `[`, 13), ".txt"), `[`, 1)) %>% 
+  select(pattern, name) %>% 
+  group_by(pattern) %>% 
+  summarize() %>% 
+  mutate(
+    ## MEGARES 
+    # resistance class
+    broadclass = sapply(str_split(pattern, "\\|"), `[`, 1),
+    # type of resistance
+    type = sapply(str_split(pattern, "\\|"), `[`, 2),
+    # protein
+    protein = sapply(str_split(pattern, "\\|"), `[`, 3),
+    # gene
+    gene = sapply(str_split(pattern, "\\|"), `[`, 4),
+    ) %>% 
+  column_to_rownames(var = "pattern")
+tax <- as.matrix(tax)
+taxtab <- tax_table(tax)
+
+# sample data - add logical column for control or true sample
+
+# list of controls
+controls <- paste("G527_94_NoTemplate-DNAextraction2_S94",
+                  "G527_96_NoTemplate-LibraryPrep_S96",
+                  "G527_93_NoTemplate-DNAextraction1_S93",
+                  sep = "|")
+samp <- sampcounts %>% 
+  #mutate(name = sapply(strsplit(sapply(strsplit(sampcounts$sample, "/"), `[`, 13), ".txt"), `[`, 1)) %>% 
+  select(name) %>% 
+  distinct() %>% 
+  mutate(Sample_or_Control = case_when(
+    str_detect(name, controls) ~ "Control",
+    !str_detect(name, controls) ~ "Sample"
+  ),
+  # farm number
+  farm = case_when(
+    # if the sample is a control, name it "control"
+    str_detect(name, controls) ~ "control",
+    # otherwise, detect the farm number
+    !str_detect(name, controls) ~ str_remove(str_extract(name, "P(\\d)"), "P")
+  ),
+  # animal number
+  animal = case_when(
+    # if the sample is a control, name it "control"
+    str_detect(name, controls) ~ "control",
+    # otherwise, detect the animal number
+    !str_detect(name, controls) ~ str_remove(str_extract(name, "A(\\d{1,2})"), "A")
+  ),
+  # sample number - this does NOT matter if it's control or not
+  samplenum = sapply(str_split(name, "_"), `[`, 2),
+  # body site
+  site = case_when(
+    # if the sample is a control, name it "control"
+    str_detect(name, controls) ~ "control",
+    # otherwise, detect the animal number
+    !str_detect(name, controls) ~ sapply(str_split(name, "_"), `[`, 4)
+  )
+  ) %>% 
+  column_to_rownames(var = "name")
+samp <- sample_data(samp)
+
+# make phyloseq object
+ps <- phyloseq(otutab, taxtab, samp)
+
+```
+
+Plot the number of gene counts and color by control or sample. We can see that the controls have very low gene counts compared to most of the samples.
+
+```{r}
+
+# inspect number of total gene counts per sample
+
+df <- as.data.frame(sample_data(ps))
+df$GeneCounts <- sample_sums(ps)
+df <- df[order(df$GeneCounts), ]
+df$Index <- seq(nrow(df))
+ggplot(data = df, aes(x = Index, y = GeneCounts, color = Sample_or_Control)) +
+  geom_point() +
+  ggtitle("Gene Counts")
+
+```
+
+The `decontam` package uses prevalence across samples compared to the prevalence in the negative controls to delineate contaminant gene alignments. This detects 70 contaminant gene alignments out of 803.
+
+```{r}
+
+## identify contaminants with prevalence - presence/absence across samples
+#  comparing prevelance of each gene in true positive samples compared to prevalence in negative controls
+
+sample_data(ps)$is.neg <- sample_data(ps)$Sample_or_Control == "Control"
+contamdf.prev <- isContaminant(ps, method="prevalence", neg="is.neg") 
+# threshold 0.5 = seqs more prevalent in neg controls than pos; contaminants - more aggressive 
+table(contamdf.prev$contaminant)
+
+```
+
+The bar plot below shows that the negative control "DNA Extraction 1" has a much higher abundnace of contaminant sequences than the other two negative controls. It's likely that this sample was contaminated? 
+
+```{r}
+
+# make a phyloseq object of only the contaminants in the negative controls
+con <- rownames(contamdf.prev[contamdf.prev$contaminant == "TRUE",])
+conps <- prune_taxa(rownames(ps@tax_table) %in% con, ps)
+negps <- prune_samples(str_detect(controls, rownames(conps@sam_data)), conps)
+
+# bar plot
+plot_bar(negps, fill = "broadclass") +
+  ggtitle("Neg controls' contaminant sequences")
+
+```
+
+Finally, create a new `phyloseq` object without the 70 contaminant genes. We can now remove control samples as well (positive and negative).
+
+```{r}
+
+## remove contaminant sequences from the rest of the dataset
+
+# get list of contaminants
+contams <- rownames(contamdf.prev[contamdf.prev$contaminant == "TRUE",])
+# remove contaminant sequences
+nocontam <- prune_taxa(!rownames(ps@tax_table) %in% contams, ps)
+# remove all controls
+nocontrol <- prune_samples(!str_detect(controls, rownames(nocontam@sam_data)), nocontam)
+
+```
+
+
+## Normalization
+
+Now that contaminant genes have been removed, the data needs to be normalized to account for bias in gene length and sequencing depth. Genes that are longer have more alignments, and samples that have more reads will have more alignments; therefore, using raw gene counts can be misleading. We account for this bias by dividing the gene counts first by gene length and then by the number of reads in the sample. That number is scaled to relative abundance for each gene.
+
+Relative abundance is calculated by "range" using the `vegan` package, so the sample with the highest relative abundance is set to 1, and all other samples are scaled between 0 and 1. Samples with no alignments to that gene remain at 0.
+
+```{r}
+
+## get the gene lengths for each gene
+len <- countsDF %>% select(pattern, genelen) %>%
+  mutate(pattern = as.character(pattern)) %>% 
+  group_by(pattern) %>% 
+  summarize(genelen = min(genelen))
+
+# read table with sequencing depth info
+seqs <- read.table("./data/sampleDepth.txt", stringsAsFactors = FALSE, header = TRUE, sep = "\t") %>% 
+  rename(names = name,
+         nreads = length)
+
+# make dataframe from OTU table
+counts <- as.data.frame(nocontrol@otu_table) %>% 
+  rownames_to_column(var = "pattern") %>% 
+  pivot_longer(cols = starts_with("G527_"), names_to = "names", values_to = "count") %>% 
+  # add gene length
+  inner_join(len, by = "pattern")  %>% 
+  # add sequencing depth
+  inner_join(seqs, by = "names")
+
+## NORMALIZE: to gene length and number of reads
+norm <- counts %>% 
+  mutate(
+    # normalize to gene length
+    normgenelen = 
+      case_when(
+        # if there are no genes, keep as 0
+        count == 0 ~ 0,
+        # otherwise, divide by gene length
+        count != 0 ~ count / genelen
+      ),
+          
+    # then normalize by number of reads
+    normseqdepth = 
+      case_when(
+        # if there are no genes, keep as 0
+        count == 0 ~ 0,
+        # otherwise, divide by number of reads
+        count != 0 ~ normgenelen / nreads
+      )
+  ) %>% 
+  # keep only final normalization
+  select(pattern, names, normseqdepth)
+
+
+# calculate relative abundance
+
+# make the dataframe horizontal to calculate relative abundance
+normh <- norm %>% 
+  pivot_wider(names_from = pattern, values_from = normseqdepth, values_fill = list(normseqdepth = 0)) %>% 
+  # decostand() requires a matrix, so make the names into rownames
+  column_to_rownames(var = "names")
+
+# calculate relative abundance
+relabun <- decostand(normh, method = "range", MARGIN = 2) %>% 
+  # bring back the names column
+  rownames_to_column(var = "name")
+
+
+```
+
+Finally, we can use the metadata encoded in gene ID and sample name to get important grouping variables for downstream analysis. 
+
+```{r}
+
+# parse out name into metadata
+relv <- relabun %>% 
+  pivot_longer(cols = -name, names_to = "pattern", values_to = "relabun") %>% 
+  mutate(
+    ## MEGARES 
+    # resistance class
+    broadclass = sapply(str_split(pattern, "\\|"), `[`, 1),
+    # type of resistance
+    type = sapply(str_split(pattern, "\\|"), `[`, 2),
+    # protein
+    protein = sapply(str_split(pattern, "\\|"), `[`, 3),
+    # gene
+    gene = sapply(str_split(pattern, "\\|"), `[`, 4),
+    ## SAMPLE METADATA
+    # farm number
+    farm = case_when(
+      # if the sample is a control, name it "control"
+      str_detect(name, controls) ~ "control",
+      # otherwise, detect the farm number
+      !str_detect(name, controls) ~ str_remove(str_extract(name, "P(\\d)"), "P")
+    ),
+    # animal number
+    animal = case_when(
+      # if the sample is a control, name it "control"
+      str_detect(name, controls) ~ "control",
+      # otherwise, detect the animal number
+      !str_detect(name, controls) ~ str_remove(str_extract(name, "A(\\d{1,2})"), "A")
+    ),
+    # sample number - this does NOT matter if it's control or not
+    samplenum = sapply(str_split(name, "_"), `[`, 2),
+    # body site
+    site = case_when(
+      # if the sample is a control, name it "control"
+      str_detect(name, controls) ~ "control",
+      # otherwise, detect the animal number
+      !str_detect(name, controls) ~ sapply(str_split(name, "_"), `[`, 4)
+    )
+  # close mutate() parenthesis
+  )
+
+```
+
+```{#r}
+
+# write this table to file
+
+write.table(relv, file = "~/git/amr-brazil/data/parsedRelativeAbundance.txt", sep = "\t",
+            row.names = FALSE)
+
+```
+
