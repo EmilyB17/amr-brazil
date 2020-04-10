@@ -224,7 +224,7 @@ seqs <- read.table("/Users/epb5360/git/amr-brazil/data/sampleDepth.txt", strings
          nreads = length)
 
 # make dataframe from OTU table
-counts <- as.data.frame(nocontrol@otu_table) %>% 
+counts <- as.data.frame(nogene@otu_table) %>% 
   rownames_to_column(var = "pattern") %>% 
   pivot_longer(cols = starts_with("G527_"), names_to = "names", values_to = "count") %>% 
   # add gene length
@@ -323,7 +323,7 @@ relv <- relabun %>%
 
 # write this table to file
 
-write.table(relv, file = "~/git/amr-brazil/data/parsedRelativeAbundance.txt", sep = "\t",
+write.table(relv, file = "~/git/amr-brazil/data/parsedRelativeAbundanceNoContams.txt", sep = "\t",
             row.names = FALSE)
 
 ```
