@@ -191,6 +191,18 @@ nocontrol <- prune_samples(!str_detect(controls, rownames(nocontam@sam_data)), n
 
 ```
 
+Interestingly, there are 4 genes that only have alignments in one negative control sample that were not removed by the decontamination process. Since there is now no prevalence within the true samples, we will remove those 4 genes from downstream analysis. (These were all manually checked)
+
+```{r}
+
+# remove 4 remaining genes only present in negative controls
+genes <- paste("CZCS", "GPC", "MEXG", "NCCB", sep = "|")
+
+# remove from analysis
+nogene <- prune_taxa(!str_detect(nocontrol@tax_table[, "gene"], genes), nocontrol)
+
+```
+
 
 ## Normalization
 
@@ -207,7 +219,7 @@ len <- countsDF %>% select(pattern, genelen) %>%
   summarize(genelen = min(genelen))
 
 # read table with sequencing depth info
-seqs <- read.table("./data/sampleDepth.txt", stringsAsFactors = FALSE, header = TRUE, sep = "\t") %>% 
+seqs <- read.table("/Users/epb5360/git/amr-brazil/data/sampleDepth.txt", stringsAsFactors = FALSE, header = TRUE, sep = "\t") %>% 
   rename(names = name,
          nreads = length)
 
