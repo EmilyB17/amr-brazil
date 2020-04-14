@@ -15,7 +15,7 @@ require(stringr)
 require(ggplot2)
 
 # read in data
-counts <- read.table("https://github.com/EmilyB17/amr-brazil/blob/master/data/parsedGeneCounts.txt?raw=true", sep = "\t", header = TRUE)
+counts <- read.table("https://github.com/EmilyB17/amr-brazil/blob/master/data/parsedRelativeAbundanceNoContams.txt?raw=true", sep = "\t", header = TRUE)
 
 ```
 
@@ -34,25 +34,14 @@ Therefore, here is the proposed comparison structure:
 Genes: Farm 1 vs Farm 2  
 Proteins: Farm 1 vs Farm 2  
 Resistance class: Farm 1 vs Farm 2  
+**Wilcox rank sum test**
 
 Genes: SNP vs Rumen vs Feces (Farm 1 and Farm 2)  
 Proteins: SNP vs Rumen vs Feces (Farm 1 and Farm 2)  
 Resistance class: SNP vs Rumen vs Feces (Farm 1 and Farm 2)  
+**Kruskal Wallis test**
 
 ***
-
-There are negative and positive controls that need to be accounted for. 
-
-
-**Data normalization**  
-
-1. Normalize to gene length by dividing gene count by the average gene length (note: MEGARES database combines all SNP mutations from other databases into one gene category, so gene lengths differ for each mutation).  
-2. Normalize to sequencing depth by dividing gene count by the number of reads in each sample (number of reads after trimming and merging).  
-3. No normalization; gene count only.  
-
-**Linear regression assumptions**  
-
-The gene count data is very zero skewed, a log transformation helps. We may be better off with non-parametric comparisons than trying to further transform the data.
 
 
 ### Data Exploration  
@@ -61,7 +50,7 @@ The gene count data is very zero skewed, a log transformation helps. We may be b
 
 # in the entire dataset, there are 174 unique proteins in 3 classes
 exp <- counts %>% 
-  group_by(class, type, protein) %>% 
+  group_by(broadclass, type, protein) %>% 
   summarize()
 
 # show unique proteins
@@ -69,38 +58,12 @@ knitr::kable(exp)
 ```
 
 ```{r}
+
 # data is not normally distributed and is very zero-skewed
-hist(counts$count, main = "Histogram of gene counts",
-     xlab = "Gene count", ylab = "Frequency")
-```
-
-```{r}
-# Log transformation helps (somewhat)
-hist(log1p(counts$count), main = "Histogram of log-transformed gene counts",
-     xlab = "Log gene count", ylab = "Frequency")
-```
-
-
-The data above only accounts for the genes that are present within each sample; i.e., there is no penalization for a sample that does not have genes that are present within another sample.
-
-To address this, add a **psuedocount** to each gene count. 
-
-```{r}
-
-# add psuedocount and make horizontal
-ch <- counts %>% 
-  group_by(class, type, protein, gene, farm, animal, sample, site, nhits) %>% 
-  summarize(n = n()) %>% 
-  ungroup() %>% 
-  mutate(pscount = n + 5,
-         psnhits = nhits + 5) %>% 
-  select(-c(n, nhits)) %>% 
-  pivot_wider(names_from = sample, values_from = pscount, values_fill= list(pscount = 5), names_prefix = "samp_")
-
-# make vertical and add log transformation
-chl <- ch %>% 
-  pivot_longer(cols = starts_with("samp_"), names_to = "sample", names_prefix = "samp_", values_to = "pscount") %>% 
-  mutate(logpscount = log1p(pscount))
+hist(counts$relabun, main = "Histogram of Relative Abundance",
+     xlab = "Relative abundance", ylab = "Frequency")
 
 ```
+
+
 
