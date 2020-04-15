@@ -47,6 +47,21 @@ for(i in 1:length(patterns)) {
   
 }
 
-ggplot(data = filter(counts, broadclass == "Biocides"), aes(x = farm, y = relabun, group = protein, fill = protein)) +
-  geom_col()
+# get only significant variables and add median + IQR
+sigs <- outsig %>% 
+  filter(sig == "TRUE") %>% 
+  left_join(counts, by = "pattern") %>% 
+  group_by(farm, pattern, broadclass, type, protein, gene) %>% 
+  summarize(median = median(relabun),
+            IQR = IQR(relabun)) %>% 
+  ungroup() %>% 
+  mutate(farm = factor(farm))
 
+
+# visualize the major trends
+ggplot(data = sigs, aes(x = farm, y = median, group = gene)) +
+  geom_point() +
+  geom_line() +
+  theme_bw() +
+  ggtitle("Significantly different genes by farm (n = 85)")
+  

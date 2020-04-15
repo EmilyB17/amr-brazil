@@ -19,38 +19,28 @@ Therefore, here is the proposed comparison structure:
 Genes: Farm 1 vs Farm 2
 Proteins: Farm 1 vs Farm 2
 Resistance class: Farm 1 vs Farm 2
+**Wilcox Rank Sum test**
 
 Genes: SNP vs Rumen vs Feces (Farm 1 and Farm 2)
 Proteins: SNP vs Rumen vs Feces (Farm 1 and Farm 2)
 Resistance class: SNP vs Rumen vs Feces (Farm 1 and Farm 2)
+**Kruskal Wallis test**
 
 ------------------------------------------------------------------------
-
-There are negative and positive controls that need to be accounted for.
-
-**Data normalization**
-
-1.  Normalize to gene length by dividing gene count by the average gene length (note: MEGARES database combines all SNP mutations from other databases into one gene category, so gene lengths differ for each mutation).
-2.  Normalize to sequencing depth by dividing gene count by the number of reads in each sample (number of reads after trimming and merging).
-3.  No normalization; gene count only.
-
-**Linear regression assumptions**
-
-The gene count data is very zero skewed, a log transformation helps. We may be better off with non-parametric comparisons than trying to further transform the data.
 
 ### Data Exploration
 
 ``` r
 # in the entire dataset, there are 174 unique proteins in 3 classes
 exp <- counts %>% 
-  group_by(class, type, protein) %>% 
+  group_by(broadclass, type, protein) %>% 
   summarize()
 
 # show unique proteins
 knitr::kable(exp)
 ```
 
-| class          | type                                                | protein                                                       |
+| broadclass     | type                                                | protein                                                       |
 |:---------------|:----------------------------------------------------|:--------------------------------------------------------------|
 | Biocides       | Acetate\_resistance                                 | Acetate\_resistance\_protein                                  |
 | Biocides       | Acid\_resistance                                    | Acid\_resistance\_protein                                     |
@@ -63,11 +53,9 @@ knitr::kable(exp)
 | Biocides       | Multi-biocide\_resistance                           | Multi-biocide\_resistance\_regulator                          |
 | Biocides       | Multi-biocide\_resistance                           | Multi-biocide\_RND\_efflux\_pump                              |
 | Biocides       | Multi-biocide\_resistance                           | Multi-biocide\_RND\_efflux\_regulator                         |
-| Biocides       | Multi-biocide\_resistance                           | Multi-biocide\_SMR\_efflux\_pump                              |
 | Biocides       | Paraquat\_resistance                                | Paraquat\_resistance\_protein                                 |
 | Biocides       | Peroxide\_resistance                                | peroxide\_resistance\_protein                                 |
 | Biocides       | Peroxide\_resistance                                | Peroxide\_resistance\_stress\_protein                         |
-| Biocides       | Phenolic\_compound\_resistance                      | Phenolic\_resistance\_protein                                 |
 | Biocides       | Phenolic\_compound\_resistance                      | Phenolic\_RND\_efflux\_pump                                   |
 | Biocides       | Phenolic\_compound\_resistance                      | Triclosan-resistant\_mutation                                 |
 | Biocides       | Quaternary\_Ammonium\_Compounds\_(QACs)\_resistance | QAC-resistant\_protein\_UDP\_glucose\_4\_epimerase            |
@@ -147,7 +135,6 @@ knitr::kable(exp)
 | Drugs          | MLS                                                 | Streptogramin\_B\_ester\_bond\_cleavage                       |
 | Drugs          | Multi-drug\_resistance                              | MDR\_23S\_ribosomal\_RNA\_methyltransferase                   |
 | Drugs          | Multi-drug\_resistance                              | MDR\_23S\_rRNA\_mutation                                      |
-| Drugs          | Multi-drug\_resistance                              | MDR\_acetyltransferase                                        |
 | Drugs          | Multi-drug\_resistance                              | MDR\_mutant\_porin\_proteins                                  |
 | Drugs          | Multi-drug\_resistance                              | MDR\_regulator                                                |
 | Drugs          | Multi-drug\_resistance                              | Multi-drug\_ABC\_efflux\_pumps                                |
@@ -210,7 +197,6 @@ knitr::kable(exp)
 | Metals         | Tellurium\_resistance                               | Tellurium\_resistance\_protein                                |
 | Metals         | Zinc\_resistance                                    | Zinc\_resistance\_protein                                     |
 | Metals         | Zinc\_resistance                                    | Zinc\_resistance\_regulator                                   |
-| Multi-compound | Biocide\_and\_metal\_resistance                     | Biocide\_and\_metal\_ABC\_efflux\_pumps                       |
 | Multi-compound | Biocide\_and\_metal\_resistance                     | Biocide\_and\_metal\_resistance\_protein                      |
 | Multi-compound | Biocide\_and\_metal\_resistance                     | Biocide\_and\_metal\_resistance\_regulator                    |
 | Multi-compound | Drug\_and\_biocide\_and\_metal\_resistance          | Drug\_and\_biocide\_and\_metal\_MFS\_efflux\_pumps            |
@@ -229,18 +215,284 @@ knitr::kable(exp)
 
 ``` r
 # data is not normally distributed and is very zero-skewed
-hist(counts$count, main = "Histogram of gene counts",
-     xlab = "Gene count", ylab = "Frequency")
+hist(counts$relabun, main = "Histogram of Relative Abundance",
+     xlab = "Relative abundance", ylab = "Frequency")
 ```
 
 <img src="statAnalysis_files/figure-markdown_github/unnamed-chunk-2-1.png" style="display: block; margin: auto;" />
 
+### Pairwise comparisons between farms
+
+Wilcox Rank-Sum test for non-parametric pairwise test of relative abundnace between farms
+
+**Genes**
+
 ``` r
-# Log transformation helps (somewhat)
-hist(log1p(counts$count), main = "Histogram of log-transformed gene counts",
-     xlab = "Log gene count", ylab = "Frequency")
+# Wilcox rank-sum for pairwise differences between farms
+
+# create empty df to fill in the loop
+outsig <- data.frame()
+# loop through all 666 genes
+for(i in 1:length(patterns)) {
+  
+  # perform wilcox test
+  w <- wilcox.test(relabun ~ farm, data = filter(counts, pattern == patterns[i]),
+                   exact = FALSE)
+  
+  # get output p value
+  outsig[i, "pattern"] <- patterns[i]
+  outsig[i, "pval"] <- round(w$p.value, 3)
+  
+  if(w$p.value < 0.05) {
+    outsig[i, "sig"] <- TRUE
+  } else {outsig[i, "sig"] <- FALSE}
+  
+}
+
+# get only significant variables and add median + IQR
+sigs <- outsig %>% 
+  filter(sig == "TRUE") %>% 
+  left_join(counts, by = "pattern") %>% 
+  group_by(farm, pattern, broadclass, type, protein, gene) %>% 
+  summarize(median = median(relabun),
+            IQR = IQR(relabun)) %>% 
+  ungroup() %>% 
+  mutate(farm = factor(farm))
 ```
 
-<img src="statAnalysis_files/figure-markdown_github/unnamed-chunk-3-1.png" style="display: block; margin: auto;" />
+There are 85 genes that are significantly different between farms, which is difficult to visualize.
 
-The data above only accounts for the genes that are present within each sample; i.e., there is no penalization for a sample that does not have genes that are present within another sample.
+This plot shows all genes between farms; most decrease from farm 1 to farm 2.
+
+``` r
+# visualize the major trends
+ggplot(data = sigs, aes(x = farm, y = median, group = gene)) +
+  geom_point() +
+  geom_jitter() +
+  geom_line() +
+  theme_bw() +
+  labs(x = "Farm", y = "Median Relative Abundance") +
+  ggtitle("Significantly different genes by farm (n = 85)")
+```
+
+<img src="statAnalysis_files/figure-markdown_github/unnamed-chunk-4-1.png" style="display: block; margin: auto;" />
+
+**Proteins**
+
+``` r
+outsig <- data.frame()
+for(i in 1:length(proteins)) {
+  
+  w <- wilcox.test(relabun ~ farm, data = filter(counts, protein == proteins[i]),
+                   exact = FALSE)
+  
+  outsig[i, "protein"] <- proteins[i]
+  outsig[i, "pval"] <- round(w$p.value, 3)
+  
+  if(w$p.value < 0.05) {
+    outsig[i, "sig"] <- TRUE
+  } else {outsig[i, "sig"] <- FALSE}
+  
+}
+
+# get only significant variables and add median + IQR
+sigs <- outsig %>% 
+  filter(sig == "TRUE") %>% 
+  left_join(counts, by = "protein") %>% 
+  group_by(farm, broadclass, type, protein) %>% 
+  summarize(median = median(relabun),
+            IQR = IQR(relabun)) %>% 
+  ungroup() %>% 
+  mutate(farm = factor(farm))
+```
+
+There are 41 significantly different resistance proteins; the plot shows that most are only present in one of the two farms.
+
+``` r
+# visualize the major trends
+ggplot(data = sigs, aes(x = farm, y = median, group = protein)) +
+  geom_point() +
+  geom_jitter() +
+  geom_line() +
+  theme_bw() +
+  labs(x = "Farm", y = "Median Relative Abundance") +
+  ggtitle("Significantly different proteins by farm (n = 41)")
+```
+
+<img src="statAnalysis_files/figure-markdown_github/unnamed-chunk-6-1.png" style="display: block; margin: auto;" />
+
+**Resistance Type**
+
+``` r
+outsig <- data.frame()
+for(i in 1:length(types)) {
+  
+  w <- wilcox.test(relabun ~ farm, data = filter(counts, type == types[i]),
+                   exact = FALSE)
+  
+  outsig[i, "type"] <- types[i]
+  outsig[i, "pval"] <- round(w$p.value, 3)
+  
+  if(w$p.value < 0.05) {
+    outsig[i, "sig"] <- TRUE
+  } else {outsig[i, "sig"] <- FALSE}
+  
+}
+
+# get only significant variables and add median + IQR
+sigs <- outsig %>% 
+  filter(sig == "TRUE") %>% 
+  left_join(counts, by = "type") %>% 
+  group_by(farm, broadclass, type) %>% 
+  summarize(median = median(relabun),
+            IQR = IQR(relabun)) %>% 
+  ungroup() %>% 
+  mutate(farm = factor(farm))
+```
+
+There are 18 significantly different resistance types; again, the plot shows that most are only present in one of the two farms.
+
+``` r
+# visualize the major trends
+ggplot(data = sigs, aes(x = farm, y = median, group = type)) +
+  geom_point() +
+  geom_jitter() +
+  geom_line() +
+  theme_bw() +
+  labs(x = "Farm", y = "Median Relative Abundance") +
+  ggtitle("Significantly different types by farm (n = 18)")
+```
+
+<img src="statAnalysis_files/figure-markdown_github/unnamed-chunk-8-1.png" style="display: block; margin: auto;" />
+
+### Comparisons between body sites
+
+Kruskal-Wallis test for non-parametric comparisons between the 3 body sites on both farms.
+
+**Genes**
+
+``` r
+# create empty dataframe to fill within the loop
+outsig <- data.frame()
+# iterate through all 666 genes
+for(i in 1:length(patterns)) {
+  
+  # perform Kruskal-Wallis test
+  k <- kruskal.test(relabun ~ site, data = filter(counts, pattern == patterns[i]))
+  
+  # collect output variables
+  outsig[i, "pattern"] <- patterns[i]
+  outsig[i, "pval"] <- round(k$p.value, 3)
+  
+  if(k$p.value < 0.05) {
+    outsig[i, "sig"] <- TRUE
+  } else {outsig[i, "sig"] <- FALSE}
+  
+}
+
+# get genes that had a significant difference
+sigs <- outsig %>% filter(sig == "TRUE") %>%  # 360 of 666 are difference between site
+  left_join(counts, by = "pattern") %>% 
+  group_by(site, pattern, broadclass, type, protein, gene) %>% 
+  summarize(median = median(relabun),
+            IQR = IQR(relabun)) %>% 
+  ungroup() %>% 
+  mutate(site = factor(site))
+```
+
+There are 360 significant genes between body sites.
+
+This plot visualizes the differences; most are higher in feces, then rumen, then SNP. However, one gene is higher in SNP.
+
+``` r
+# visualize the major trends
+ggplot(data = sigs, aes(x = site, y = median, group = gene)) +
+  geom_point() +
+  geom_jitter() +
+  geom_line() +
+  theme_bw() +
+  labs(x = "Body Site", y = "Median Relative Abundance") +
+  ggtitle("Significantly different genes by site (n = 360)")
+```
+
+<img src="statAnalysis_files/figure-markdown_github/unnamed-chunk-10-1.png" style="display: block; margin: auto;" />
+
+**Proteins**
+
+``` r
+outsig <- data.frame()
+for(i in 1:length(proteins)) {
+  
+  k <- kruskal.test(relabun ~ site, data = filter(counts, protein == proteins[i]))
+  
+  outsig[i, "protein"] <- proteins[i]
+  outsig[i, "pval"] <- round(k$p.value, 3)
+  
+  if(k$p.value < 0.05) {
+    outsig[i, "sig"] <- TRUE
+  } else {outsig[i, "sig"] <- FALSE}
+  
+}
+
+# get significant variables
+sigs <- outsig %>% filter(sig == "TRUE") %>%  
+  left_join(counts, by = "protein") %>% 
+  group_by(site, broadclass, type, protein) %>% 
+  summarize(median = median(relabun),
+            IQR = IQR(relabun)) %>% 
+  ungroup() %>% 
+  mutate(site = factor(site))
+```
+
+``` r
+# visualize the major trends
+ggplot(data = sigs, aes(x = site, y = median, group = protein)) +
+  geom_point() +
+  geom_jitter() +
+  geom_line() +
+  theme_bw() +
+  labs(x = "Body Site", y = "Median Relative Abundance") +
+  ggtitle("Significantly different proteins by site (n = 118)")
+```
+
+<img src="statAnalysis_files/figure-markdown_github/unnamed-chunk-12-1.png" style="display: block; margin: auto;" />
+
+**Resistance Type**
+
+``` r
+outsig <- data.frame()
+for(i in 1:length(types)) {
+  
+  k <- kruskal.test(relabun ~ site, data = filter(counts, type == types[i]))
+  
+  outsig[i, "type"] <- types[i]
+  outsig[i, "pval"] <- round(k$p.value, 3)
+  
+  if(k$p.value < 0.05) {
+    outsig[i, "sig"] <- TRUE
+  } else {outsig[i, "sig"] <- FALSE}
+  
+}
+
+# get significant variables
+sigs <- outsig %>% filter(sig == "TRUE") %>%  
+  left_join(counts, by = "type") %>% 
+  group_by(site, broadclass, type) %>% 
+  summarize(median = median(relabun),
+            IQR = IQR(relabun)) %>% 
+  ungroup() %>% 
+  mutate(site = factor(site))
+```
+
+``` r
+# visualize the major trends
+ggplot(data = sigs, aes(x = site, y = median, group = type)) +
+  geom_point() +
+  geom_jitter() +
+  geom_line() +
+  theme_bw() +
+  labs(x = "Body Site", y = "Median Relative Abundance") +
+  ggtitle("Significantly different proteins by site (n = 46)")
+```
+
+<img src="statAnalysis_files/figure-markdown_github/unnamed-chunk-14-1.png" style="display: block; margin: auto;" />

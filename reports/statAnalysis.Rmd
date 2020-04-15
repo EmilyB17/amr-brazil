@@ -17,6 +17,13 @@ require(ggplot2)
 # read in data
 counts <- read.table("https://github.com/EmilyB17/amr-brazil/blob/master/data/parsedRelativeAbundanceNoContams.txt?raw=true", sep = "\t", header = TRUE)
 
+# get unique factors for loops
+classes <- unique(counts$broadclass)
+types <- unique(counts$type)
+proteins <- unique(counts$protein)
+genes <- unique(counts$gene)
+patterns <- unique(counts$pattern)
+
 ```
 
 ## Analysis Structure
@@ -34,7 +41,7 @@ Therefore, here is the proposed comparison structure:
 Genes: Farm 1 vs Farm 2  
 Proteins: Farm 1 vs Farm 2  
 Resistance class: Farm 1 vs Farm 2  
-**Wilcox rank sum test**
+**Wilcox Rank Sum test**
 
 Genes: SNP vs Rumen vs Feces (Farm 1 and Farm 2)  
 Proteins: SNP vs Rumen vs Feces (Farm 1 and Farm 2)  
@@ -65,5 +72,297 @@ hist(counts$relabun, main = "Histogram of Relative Abundance",
 
 ```
 
+### Pairwise comparisons between farms
 
+Wilcox Rank-Sum test for non-parametric pairwise test of relative abundnace between farms
+
+**Genes**
+```{r}
+
+# Wilcox rank-sum for pairwise differences between farms
+
+# create empty df to fill in the loop
+outsig <- data.frame()
+# loop through all 666 genes
+for(i in 1:length(patterns)) {
+  
+  # perform wilcox test
+  w <- wilcox.test(relabun ~ farm, data = filter(counts, pattern == patterns[i]),
+                   exact = FALSE)
+  
+  # get output p value
+  outsig[i, "pattern"] <- patterns[i]
+  outsig[i, "pval"] <- round(w$p.value, 3)
+  
+  if(w$p.value < 0.05) {
+    outsig[i, "sig"] <- TRUE
+  } else {outsig[i, "sig"] <- FALSE}
+  
+}
+
+# get only significant variables and add median + IQR
+sigs <- outsig %>% 
+  filter(sig == "TRUE") %>% 
+  left_join(counts, by = "pattern") %>% 
+  group_by(farm, pattern, broadclass, type, protein, gene) %>% 
+  summarize(median = median(relabun),
+            IQR = IQR(relabun)) %>% 
+  ungroup() %>% 
+  mutate(farm = factor(farm))
+
+```
+
+There are `r length(unique(sigs$pattern))` genes that are significantly different between farms, which is difficult to visualize. 
+
+This plot shows all genes between farms; most decrease from farm 1 to farm 2.
+
+```{r}
+
+# visualize the major trends
+ggplot(data = sigs, aes(x = farm, y = median, group = gene)) +
+  geom_point() +
+  geom_jitter() +
+  geom_line() +
+  theme_bw() +
+  labs(x = "Farm", y = "Median Relative Abundance") +
+  ggtitle("Significantly different genes by farm (n = 85)")
+
+```
+
+
+**Proteins**
+
+```{r}
+
+outsig <- data.frame()
+for(i in 1:length(proteins)) {
+  
+  w <- wilcox.test(relabun ~ farm, data = filter(counts, protein == proteins[i]),
+                   exact = FALSE)
+  
+  outsig[i, "protein"] <- proteins[i]
+  outsig[i, "pval"] <- round(w$p.value, 3)
+  
+  if(w$p.value < 0.05) {
+    outsig[i, "sig"] <- TRUE
+  } else {outsig[i, "sig"] <- FALSE}
+  
+}
+
+# get only significant variables and add median + IQR
+sigs <- outsig %>% 
+  filter(sig == "TRUE") %>% 
+  left_join(counts, by = "protein") %>% 
+  group_by(farm, broadclass, type, protein) %>% 
+  summarize(median = median(relabun),
+            IQR = IQR(relabun)) %>% 
+  ungroup() %>% 
+  mutate(farm = factor(farm))
+
+```
+
+There are `r length(unique(sigs$protein))` significantly different resistance proteins; the plot shows that most are only present in one of the two farms.
+
+```{r}
+
+# visualize the major trends
+ggplot(data = sigs, aes(x = farm, y = median, group = protein)) +
+  geom_point() +
+  geom_jitter() +
+  geom_line() +
+  theme_bw() +
+  labs(x = "Farm", y = "Median Relative Abundance") +
+  ggtitle("Significantly different proteins by farm (n = 41)")
+
+```
+
+**Resistance Type**
+
+```{r}
+
+outsig <- data.frame()
+for(i in 1:length(types)) {
+  
+  w <- wilcox.test(relabun ~ farm, data = filter(counts, type == types[i]),
+                   exact = FALSE)
+  
+  outsig[i, "type"] <- types[i]
+  outsig[i, "pval"] <- round(w$p.value, 3)
+  
+  if(w$p.value < 0.05) {
+    outsig[i, "sig"] <- TRUE
+  } else {outsig[i, "sig"] <- FALSE}
+  
+}
+
+# get only significant variables and add median + IQR
+sigs <- outsig %>% 
+  filter(sig == "TRUE") %>% 
+  left_join(counts, by = "type") %>% 
+  group_by(farm, broadclass, type) %>% 
+  summarize(median = median(relabun),
+            IQR = IQR(relabun)) %>% 
+  ungroup() %>% 
+  mutate(farm = factor(farm))
+
+
+```
+
+There are `r length(unique(sigs$type))` significantly different resistance types; again, the plot shows that most are only present in one of the two farms.
+
+```{r}
+
+# visualize the major trends
+ggplot(data = sigs, aes(x = farm, y = median, group = type)) +
+  geom_point() +
+  geom_jitter() +
+  geom_line() +
+  theme_bw() +
+  labs(x = "Farm", y = "Median Relative Abundance") +
+  ggtitle("Significantly different types by farm (n = 18)")
+
+```
+
+
+
+### Comparisons between body sites
+
+Kruskal-Wallis test for non-parametric comparisons between the 3 body sites on both farms.
+
+**Genes**
+
+```{r}
+
+# create empty dataframe to fill within the loop
+outsig <- data.frame()
+# iterate through all 666 genes
+for(i in 1:length(patterns)) {
+  
+  # perform Kruskal-Wallis test
+  k <- kruskal.test(relabun ~ site, data = filter(counts, pattern == patterns[i]))
+  
+  # collect output variables
+  outsig[i, "pattern"] <- patterns[i]
+  outsig[i, "pval"] <- round(k$p.value, 3)
+  
+  if(k$p.value < 0.05) {
+    outsig[i, "sig"] <- TRUE
+  } else {outsig[i, "sig"] <- FALSE}
+  
+}
+
+# get genes that had a significant difference
+sigs <- outsig %>% filter(sig == "TRUE") %>%  # 360 of 666 are difference between site
+  left_join(counts, by = "pattern") %>% 
+  group_by(site, pattern, broadclass, type, protein, gene) %>% 
+  summarize(median = median(relabun),
+            IQR = IQR(relabun)) %>% 
+  ungroup() %>% 
+  mutate(site = factor(site))
+
+```
+
+There are `r length(unique(sigs$pattern))` significant genes between body sites.
+
+This plot visualizes the differences; most are higher in feces, then rumen, then SNP. However, one gene is higher in SNP.
+
+```{r}
+
+# visualize the major trends
+ggplot(data = sigs, aes(x = site, y = median, group = gene)) +
+  geom_point() +
+  geom_jitter() +
+  geom_line() +
+  theme_bw() +
+  labs(x = "Body Site", y = "Median Relative Abundance") +
+  ggtitle("Significantly different genes by site (n = 360)")
+
+```
+
+
+**Proteins**
+
+```{r}
+
+outsig <- data.frame()
+for(i in 1:length(proteins)) {
+  
+  k <- kruskal.test(relabun ~ site, data = filter(counts, protein == proteins[i]))
+  
+  outsig[i, "protein"] <- proteins[i]
+  outsig[i, "pval"] <- round(k$p.value, 3)
+  
+  if(k$p.value < 0.05) {
+    outsig[i, "sig"] <- TRUE
+  } else {outsig[i, "sig"] <- FALSE}
+  
+}
+
+# get significant variables
+sigs <- outsig %>% filter(sig == "TRUE") %>%  
+  left_join(counts, by = "protein") %>% 
+  group_by(site, broadclass, type, protein) %>% 
+  summarize(median = median(relabun),
+            IQR = IQR(relabun)) %>% 
+  ungroup() %>% 
+  mutate(site = factor(site))
+
+```
+
+```{r}
+
+# visualize the major trends
+ggplot(data = sigs, aes(x = site, y = median, group = protein)) +
+  geom_point() +
+  geom_jitter() +
+  geom_line() +
+  theme_bw() +
+  labs(x = "Body Site", y = "Median Relative Abundance") +
+  ggtitle("Significantly different proteins by site (n = 118)")
+
+```
+
+
+**Resistance Type**
+
+```{r}
+
+outsig <- data.frame()
+for(i in 1:length(types)) {
+  
+  k <- kruskal.test(relabun ~ site, data = filter(counts, type == types[i]))
+  
+  outsig[i, "type"] <- types[i]
+  outsig[i, "pval"] <- round(k$p.value, 3)
+  
+  if(k$p.value < 0.05) {
+    outsig[i, "sig"] <- TRUE
+  } else {outsig[i, "sig"] <- FALSE}
+  
+}
+
+# get significant variables
+sigs <- outsig %>% filter(sig == "TRUE") %>%  
+  left_join(counts, by = "type") %>% 
+  group_by(site, broadclass, type) %>% 
+  summarize(median = median(relabun),
+            IQR = IQR(relabun)) %>% 
+  ungroup() %>% 
+  mutate(site = factor(site))
+
+```
+
+
+```{r}
+
+# visualize the major trends
+ggplot(data = sigs, aes(x = site, y = median, group = type)) +
+  geom_point() +
+  geom_jitter() +
+  geom_line() +
+  theme_bw() +
+  labs(x = "Body Site", y = "Median Relative Abundance") +
+  ggtitle("Significantly different types by site (n = 46)")
+
+```
 
