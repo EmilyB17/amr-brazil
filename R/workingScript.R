@@ -1,107 +1,59 @@
-# stat analysis working
-
-require(ggpubr)
 
 
-# non-parametric for one-way ANOVA
-
-kruskal.test(relabun ~ site, data = counts)
-
-
-# post-hoc for kruskal wallis
-pairwise.wilcox.test(counts$relabun, counts$farm,
-                     p.adjust.method = "bonferroni")
-
-# this is the t test
-wilcox.test(relabun ~ farm, data = counts)
-
-
-# ---- WilcoxRank ----
-
-## WILCOX RANK SUM FOR COMPARISONS BY FARM
-counts <- counts %>% 
-  mutate(farm = factor(farm, ordered = TRUE, levels = c("1", "2")),
-         animal = factor(animal))
-
-# difference in resistance classes 
-wilcox.test(relabun ~ farm, data = filter(counts, broadclass == "Biocides"))
-boxplot(relabun ~ broadclass, data = counts)
-
-w <- wilcox.test(relabun ~ farm, data = filter(counts, broadclass == "Biocides"))
-
-classes <- unique(counts$broadclass)
-proteins <- unique(counts$protein)
-genes <- unique(counts$gene)
-patterns <- unique(counts$pattern)
-
+## Stratify for each farm
+counts <- counts %>% mutate(farm = factor(farm))
+farms <- levels(counts$farm)
+# create empty dataframe to fill within the loop
 outsig <- data.frame()
-for(i in 1:length(patterns)) {
+
+for(j in 1:length(farms)) {
   
-  w <- wilcox.test(relabun ~ farm, data = filter(counts, pattern == patterns[i]),
-                   exact = FALSE)
-  
-  outsig[i, "pattern"] <- patterns[i]
-  outsig[i, "pval"] <- round(w$p.value, 3)
-  
-  if(w$p.value < 0.05) {
-    outsig[i, "sig"] <- TRUE
-  } else {outsig[i, "sig"] <- FALSE}
-  
+  # iterate through all 666 genes
+  for(i in 1:length(patterns)) {
+    
+    # perform Kruskal-Wallis test
+    k <- kruskal.test(relabun ~ site, data = filter(counts, pattern == patterns[i] &
+                                                      farm == farms[j]))
+    
+   
+    # some farms do not have the gene present; mark as 'absent'
+    if(is.na(k$p.value)) {
+      
+      pvaldat <- NA
+      
+    } else {
+      
+      pvaldat <- round(k$p.value, 3)
+      
+    } 
+        
+    # collect variables to output DF
+    outsig <- rbind(outsig,
+                    data.frame(farm = farms[j],
+                               pattern = patterns[i],
+                               pval = pvaldat))
+  }
 }
 
-s <- outsig %>% filter(sig == TRUE)
-# get only significant variables and add median + IQR
-sigs <- outsig %>% 
-  filter(sig == "TRUE") %>% 
-  left_join(counts, by = "pattern") %>% 
-  group_by(farm, pattern) %>% 
+# adjust p vals for multiple comparisons with false discovery rate
+adj <- outsig %>% 
+  mutate(
+    # adjust p values with FDR
+    padj = p.adjust(pval, method = "fdr", n = length(outsig$pval)),
+    # Boolean for significance
+    sig = case_when(
+      padj < 0.05 ~ TRUE,
+      padj >= 0.05 ~ FALSE))
+ 
+# get genes that had a significant difference
+sigs <- adj %>% filter(sig == "TRUE") %>%  
+  left_join(counts, by = c("pattern", "farm")) %>% 
+  group_by(site, broadclass, farm, pattern) %>% 
   summarize(median = median(relabun),
             IQR = IQR(relabun)) %>% 
   ungroup() %>% 
-  mutate(farm = factor(farm))
-
-
-
-  
-# for genes that are present in both farms, see which farm has more abundance
-sum <- outsig %>% 
-  filter(sig == TRUE) %>% 
-  left_join(counts, by = "pattern")
-
-# visualize the major trends
-ggplot(data = sigs, aes(x = farm, y = median, group = pattern)) +
-  geom_point() +
-  geom_jitter() +
-  geom_line() +
-  theme_bw() +
-  labs(x = "Farm", y = "Median Relative Abundance") +
-  ggtitle("Significantly different types by farm (n = 18)")
-
-## ---- Kruskal-Wallis ----
-
-## BOTH FARMS
-outsig <- data.frame()
-for(i in 1:length(types)) {
-  
-  k <- kruskal.test(relabun ~ site, data = filter(counts, type == types[i]))
-  
-  outsig[i, "type"] <- types[i]
-  outsig[i, "pval"] <- round(k$p.value, 3)
-  
-  if(k$p.value < 0.05) {
-    outsig[i, "sig"] <- TRUE
-  } else {outsig[i, "sig"] <- FALSE}
-  
-}
-
-# get significant variables
-sigs <- outsig %>% filter(sig == "TRUE") %>%  
-  left_join(counts, by = "type") %>% 
-  group_by(site, broadclass, type) %>% 
-  summarize(median = median(relabun),
-            IQR = IQR(relabun)) %>% 
-  ungroup() %>% 
-  mutate(site = factor(site))
+  mutate(site = factor(site),
+         farm = factor(farm))
 
 # visualize the major trends
 ggplot(data = sigs, aes(x = site, y = median, group = type)) +
@@ -110,4 +62,7 @@ ggplot(data = sigs, aes(x = site, y = median, group = type)) +
   geom_line() +
   theme_bw() +
   labs(x = "Body Site", y = "Median Relative Abundance") +
-  ggtitle("Significantly different proteins by site (n = 46)")
+  ggtitle("Significantly different proteins by site & farm (total n = 45)") +
+  facet_wrap(~ farm)
+
+

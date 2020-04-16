@@ -243,14 +243,20 @@ for(i in 1:length(patterns)) {
   outsig[i, "pattern"] <- patterns[i]
   outsig[i, "pval"] <- round(w$p.value, 3)
   
-  if(w$p.value < 0.05) {
-    outsig[i, "sig"] <- TRUE
-  } else {outsig[i, "sig"] <- FALSE}
-  
 }
 
+# adjust p values for false discovery rate
+adj <- outsig %>% 
+  mutate(
+    # adjust p values with FDR
+    padj = p.adjust(pval, method = "fdr", n = length(outsig$pval)),
+    # Boolean for significance
+    sig = case_when(
+      padj < 0.05 ~ TRUE,
+      padj >= 0.05 ~ FALSE))
+
 # get only significant variables and add median + IQR
-sigs <- outsig %>% 
+sigs <- adj %>% 
   filter(sig == "TRUE") %>% 
   left_join(counts, by = "pattern") %>% 
   group_by(farm, pattern, broadclass, type, protein, gene) %>% 
@@ -260,7 +266,7 @@ sigs <- outsig %>%
   mutate(farm = factor(farm))
 ```
 
-There are 85 genes that are significantly different between farms, which is difficult to visualize.
+There are 5 genes that are significantly different between farms, which is difficult to visualize.
 
 This plot shows all genes between farms; most decrease from farm 1 to farm 2.
 
@@ -272,7 +278,8 @@ ggplot(data = sigs, aes(x = farm, y = median, group = gene)) +
   geom_line() +
   theme_bw() +
   labs(x = "Farm", y = "Median Relative Abundance") +
-  ggtitle("Significantly different genes by farm (n = 85)")
+  ggtitle("Significantly different genes by farm",
+          subtitle = paste0("n = (", length(which(adj$sig == TRUE)), ")"))
 ```
 
 <img src="statAnalysis_files/figure-markdown_github/unnamed-chunk-4-1.png" style="display: block; margin: auto;" />
@@ -289,14 +296,20 @@ for(i in 1:length(proteins)) {
   outsig[i, "protein"] <- proteins[i]
   outsig[i, "pval"] <- round(w$p.value, 3)
   
-  if(w$p.value < 0.05) {
-    outsig[i, "sig"] <- TRUE
-  } else {outsig[i, "sig"] <- FALSE}
-  
 }
 
+# adjust p values for false discovery rate
+adj <- outsig %>% 
+  mutate(
+    # adjust p values with FDR
+    padj = p.adjust(pval, method = "fdr", n = length(outsig$pval)),
+    # Boolean for significance
+    sig = case_when(
+      padj < 0.05 ~ TRUE,
+      padj >= 0.05 ~ FALSE))
+
 # get only significant variables and add median + IQR
-sigs <- outsig %>% 
+sigs <- adj %>% 
   filter(sig == "TRUE") %>% 
   left_join(counts, by = "protein") %>% 
   group_by(farm, broadclass, type, protein) %>% 
@@ -306,7 +319,7 @@ sigs <- outsig %>%
   mutate(farm = factor(farm))
 ```
 
-There are 41 significantly different resistance proteins; the plot shows that most are only present in one of the two farms.
+There are 16 significantly different resistance proteins; the plot shows that most are only present in one of the two farms.
 
 ``` r
 # visualize the major trends
@@ -316,7 +329,8 @@ ggplot(data = sigs, aes(x = farm, y = median, group = protein)) +
   geom_line() +
   theme_bw() +
   labs(x = "Farm", y = "Median Relative Abundance") +
-  ggtitle("Significantly different proteins by farm (n = 41)")
+  ggtitle("Significantly different proteins by farm",
+          subtitle = paste0("n = (", length(which(adj$sig == TRUE)), ")"))
 ```
 
 <img src="statAnalysis_files/figure-markdown_github/unnamed-chunk-6-1.png" style="display: block; margin: auto;" />
@@ -333,14 +347,20 @@ for(i in 1:length(types)) {
   outsig[i, "type"] <- types[i]
   outsig[i, "pval"] <- round(w$p.value, 3)
   
-  if(w$p.value < 0.05) {
-    outsig[i, "sig"] <- TRUE
-  } else {outsig[i, "sig"] <- FALSE}
-  
 }
 
+# adjust p values for false discovery rate
+adj <- outsig %>% 
+  mutate(
+    # adjust p values with FDR
+    padj = p.adjust(pval, method = "fdr", n = length(outsig$pval)),
+    # Boolean for significance
+    sig = case_when(
+      padj < 0.05 ~ TRUE,
+      padj >= 0.05 ~ FALSE))
+
 # get only significant variables and add median + IQR
-sigs <- outsig %>% 
+sigs <- adj %>% 
   filter(sig == "TRUE") %>% 
   left_join(counts, by = "type") %>% 
   group_by(farm, broadclass, type) %>% 
@@ -350,7 +370,7 @@ sigs <- outsig %>%
   mutate(farm = factor(farm))
 ```
 
-There are 18 significantly different resistance types; again, the plot shows that most are only present in one of the two farms.
+There are 14 significantly different resistance types; again, the plot shows that most are only present in one of the two farms.
 
 ``` r
 # visualize the major trends
@@ -360,59 +380,90 @@ ggplot(data = sigs, aes(x = farm, y = median, group = type)) +
   geom_line() +
   theme_bw() +
   labs(x = "Farm", y = "Median Relative Abundance") +
-  ggtitle("Significantly different types by farm (n = 18)")
+  ggtitle("Significantly different types by farm",
+          subtitle = paste0("n = (", length(which(adj$sig == TRUE)), ")"))
 ```
 
 <img src="statAnalysis_files/figure-markdown_github/unnamed-chunk-8-1.png" style="display: block; margin: auto;" />
 
 ### Comparisons between body sites
 
-Kruskal-Wallis test for non-parametric comparisons between the 3 body sites on both farms.
+Kruskal-Wallis test for non-parametric comparisons between the 3 body sites, stratified by farm.
 
 **Genes**
 
 ``` r
+## Stratify for each farm
+counts <- counts %>% mutate(farm = factor(farm))
+farms <- levels(counts$farm)
 # create empty dataframe to fill within the loop
 outsig <- data.frame()
-# iterate through all 666 genes
-for(i in 1:length(patterns)) {
+
+for(j in 1:length(farms)) {
   
-  # perform Kruskal-Wallis test
-  k <- kruskal.test(relabun ~ site, data = filter(counts, pattern == patterns[i]))
-  
-  # collect output variables
-  outsig[i, "pattern"] <- patterns[i]
-  outsig[i, "pval"] <- round(k$p.value, 3)
-  
-  if(k$p.value < 0.05) {
-    outsig[i, "sig"] <- TRUE
-  } else {outsig[i, "sig"] <- FALSE}
-  
+  # iterate through all 666 genes
+  for(i in 1:length(patterns)) {
+    
+    # perform Kruskal-Wallis test
+    k <- kruskal.test(relabun ~ site, data = filter(counts, pattern == patterns[i] &
+                                                      farm == farms[j]))
+    
+   
+    # some farms do not have the gene present; mark as 'absent'
+    if(is.na(k$p.value)) {
+      
+      pvaldat <- NA
+      
+    } else {
+      
+      pvaldat <- round(k$p.value, 3)
+      
+    } 
+        
+    # collect variables to output DF
+    outsig <- rbind(outsig,
+                    data.frame(farm = farms[j],
+                               pattern = patterns[i],
+                               pval = pvaldat))
+  }
 }
 
+# adjust p vals for multiple comparisons with false discovery rate
+adj <- outsig %>% 
+  mutate(
+    # adjust p values with FDR
+    padj = p.adjust(pval, method = "fdr", n = length(outsig$pval)),
+    # Boolean for significance
+    sig = case_when(
+      padj < 0.05 ~ TRUE,
+      padj >= 0.05 ~ FALSE))
+ 
 # get genes that had a significant difference
-sigs <- outsig %>% filter(sig == "TRUE") %>%  # 360 of 666 are difference between site
-  left_join(counts, by = "pattern") %>% 
-  group_by(site, pattern, broadclass, type, protein, gene) %>% 
+sigs <- adj %>% filter(sig == "TRUE") %>%  
+  left_join(counts, by = c("pattern", "farm")) %>% 
+  group_by(site, broadclass, farm, pattern) %>% 
   summarize(median = median(relabun),
             IQR = IQR(relabun)) %>% 
   ungroup() %>% 
-  mutate(site = factor(site))
+  mutate(site = factor(site),
+         farm = factor(farm))
 ```
 
-There are 360 significant genes between body sites.
+There are 345 significant genes between body sites.
 
 This plot visualizes the differences; most are higher in feces, then rumen, then SNP. However, one gene is higher in SNP.
 
 ``` r
 # visualize the major trends
-ggplot(data = sigs, aes(x = site, y = median, group = gene)) +
+ggplot(data = sigs, aes(x = site, y = median, group = pattern)) +
   geom_point() +
   geom_jitter() +
   geom_line() +
   theme_bw() +
   labs(x = "Body Site", y = "Median Relative Abundance") +
-  ggtitle("Significantly different genes by site (n = 360)")
+  ggtitle("Significantly different genes by site & farm",
+          subtitle = paste0("n = (", length(which(adj$sig == TRUE)), ")")) +
+  facet_wrap(~ farm)
 ```
 
 <img src="statAnalysis_files/figure-markdown_github/unnamed-chunk-10-1.png" style="display: block; margin: auto;" />
@@ -420,28 +471,60 @@ ggplot(data = sigs, aes(x = site, y = median, group = gene)) +
 **Proteins**
 
 ``` r
+## Stratify for each farm
+counts <- counts %>% mutate(farm = factor(farm))
+farms <- levels(counts$farm)
+# create empty dataframe to fill within the loop
 outsig <- data.frame()
-for(i in 1:length(proteins)) {
+
+for(j in 1:length(farms)) {
   
-  k <- kruskal.test(relabun ~ site, data = filter(counts, protein == proteins[i]))
-  
-  outsig[i, "protein"] <- proteins[i]
-  outsig[i, "pval"] <- round(k$p.value, 3)
-  
-  if(k$p.value < 0.05) {
-    outsig[i, "sig"] <- TRUE
-  } else {outsig[i, "sig"] <- FALSE}
-  
+  # iterate through all 666 genes
+  for(i in 1:length(proteins)) {
+    
+    # perform Kruskal-Wallis test
+    k <- kruskal.test(relabun ~ site, data = filter(counts, protein == proteins[i] &
+                                                      farm == farms[j]))
+    
+   
+    # some farms do not have the gene present; mark as 'absent'
+    if(is.na(k$p.value)) {
+      
+      pvaldat <- NA
+      
+    } else {
+      
+      pvaldat <- round(k$p.value, 3)
+      
+    } 
+        
+    # collect variables to output DF
+    outsig <- rbind(outsig,
+                    data.frame(farm = farms[j],
+                               protein = proteins[i],
+                               pval = pvaldat))
+  }
 }
 
-# get significant variables
-sigs <- outsig %>% filter(sig == "TRUE") %>%  
-  left_join(counts, by = "protein") %>% 
-  group_by(site, broadclass, type, protein) %>% 
+# adjust p vals for multiple comparisons with false discovery rate
+adj <- outsig %>% 
+  mutate(
+    # adjust p values with FDR
+    padj = p.adjust(pval, method = "fdr", n = length(outsig$pval)),
+    # Boolean for significance
+    sig = case_when(
+      padj < 0.05 ~ TRUE,
+      padj >= 0.05 ~ FALSE))
+ 
+# get genes that had a significant difference
+sigs <- adj %>% filter(sig == "TRUE") %>%  
+  left_join(counts, by = c("protein", "farm")) %>% 
+  group_by(site, broadclass, type, farm, protein) %>% 
   summarize(median = median(relabun),
             IQR = IQR(relabun)) %>% 
   ungroup() %>% 
-  mutate(site = factor(site))
+  mutate(site = factor(site),
+         farm = factor(farm))
 ```
 
 ``` r
@@ -452,7 +535,9 @@ ggplot(data = sigs, aes(x = site, y = median, group = protein)) +
   geom_line() +
   theme_bw() +
   labs(x = "Body Site", y = "Median Relative Abundance") +
-  ggtitle("Significantly different proteins by site (n = 118)")
+  ggtitle("Significantly different proteins by site & farm",
+          subtitle = paste0("n = (", length(which(adj$sig == TRUE)), ")")) +
+  facet_wrap(~ farm)
 ```
 
 <img src="statAnalysis_files/figure-markdown_github/unnamed-chunk-12-1.png" style="display: block; margin: auto;" />
@@ -460,28 +545,60 @@ ggplot(data = sigs, aes(x = site, y = median, group = protein)) +
 **Resistance Type**
 
 ``` r
+## Stratify for each farm
+counts <- counts %>% mutate(farm = factor(farm))
+farms <- levels(counts$farm)
+# create empty dataframe to fill within the loop
 outsig <- data.frame()
-for(i in 1:length(types)) {
+
+for(j in 1:length(farms)) {
   
-  k <- kruskal.test(relabun ~ site, data = filter(counts, type == types[i]))
-  
-  outsig[i, "type"] <- types[i]
-  outsig[i, "pval"] <- round(k$p.value, 3)
-  
-  if(k$p.value < 0.05) {
-    outsig[i, "sig"] <- TRUE
-  } else {outsig[i, "sig"] <- FALSE}
-  
+  # iterate through all 666 genes
+  for(i in 1:length(types)) {
+    
+    # perform Kruskal-Wallis test
+    k <- kruskal.test(relabun ~ site, data = filter(counts, type == types[i] &
+                                                      farm == farms[j]))
+    
+   
+    # some farms do not have the gene present; mark as 'absent'
+    if(is.na(k$p.value)) {
+      
+      pvaldat <- NA
+      
+    } else {
+      
+      pvaldat <- round(k$p.value, 3)
+      
+    } 
+        
+    # collect variables to output DF
+    outsig <- rbind(outsig,
+                    data.frame(farm = farms[j],
+                               type = types[i],
+                               pval = pvaldat))
+  }
 }
 
-# get significant variables
-sigs <- outsig %>% filter(sig == "TRUE") %>%  
-  left_join(counts, by = "type") %>% 
-  group_by(site, broadclass, type) %>% 
+# adjust p vals for multiple comparisons with false discovery rate
+adj <- outsig %>% 
+  mutate(
+    # adjust p values with FDR
+    padj = p.adjust(pval, method = "fdr", n = length(outsig$pval)),
+    # Boolean for significance
+    sig = case_when(
+      padj < 0.05 ~ TRUE,
+      padj >= 0.05 ~ FALSE))
+ 
+# get genes that had a significant difference
+sigs <- adj %>% filter(sig == "TRUE") %>%  
+  left_join(counts, by = c("type", "farm")) %>% 
+  group_by(site, broadclass, type, farm) %>% 
   summarize(median = median(relabun),
             IQR = IQR(relabun)) %>% 
   ungroup() %>% 
-  mutate(site = factor(site))
+  mutate(site = factor(site),
+         farm = factor(farm))
 ```
 
 ``` r
@@ -492,7 +609,9 @@ ggplot(data = sigs, aes(x = site, y = median, group = type)) +
   geom_line() +
   theme_bw() +
   labs(x = "Body Site", y = "Median Relative Abundance") +
-  ggtitle("Significantly different proteins by site (n = 46)")
+  ggtitle("Significantly different proteins by site & farm",
+          subtitle = paste0("n = (", length(which(adj$sig == TRUE)), ")")) +
+  facet_wrap(~ farm)
 ```
 
 <img src="statAnalysis_files/figure-markdown_github/unnamed-chunk-14-1.png" style="display: block; margin: auto;" />
