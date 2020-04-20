@@ -1,68 +1,63 @@
 
+# calculate presence/absence
+presab <- norm %>% 
+  mutate(presence = case_when(
+    normseqdepth == 0 ~ 0,
+    normseqdepth != 0 ~ 1
+  )) %>% 
+  select(-normseqdepth)
 
-## Stratify for each farm
-counts <- counts %>% mutate(farm = factor(farm))
-farms <- levels(counts$farm)
-# create empty dataframe to fill within the loop
-outsig <- data.frame()
+# make horizontal by each gene
+presabh <- presab %>% 
+  pivot_wider(names_from = pattern, values_from = presence)
 
-for(j in 1:length(farms)) {
-  
-  # iterate through all 666 genes
-  for(i in 1:length(patterns)) {
-    
-    # perform Kruskal-Wallis test
-    k <- kruskal.test(relabun ~ site, data = filter(counts, pattern == patterns[i] &
-                                                      farm == farms[j]))
-    
-   
-    # some farms do not have the gene present; mark as 'absent'
-    if(is.na(k$p.value)) {
-      
-      pvaldat <- NA
-      
-    } else {
-      
-      pvaldat <- round(k$p.value, 3)
-      
-    } 
-        
-    # collect variables to output DF
-    outsig <- rbind(outsig,
-                    data.frame(farm = farms[j],
-                               pattern = patterns[i],
-                               pval = pvaldat))
-  }
-}
+# calculate total presence for each gene
+sums <- colSums(presabh %>% select(-names))
 
-# adjust p vals for multiple comparisons with false discovery rate
-adj <- outsig %>% 
+
+# add grouping variables
+prestotal <- presab %>% 
+  rename(name = names) %>% 
   mutate(
-    # adjust p values with FDR
-    padj = p.adjust(pval, method = "fdr", n = length(outsig$pval)),
-    # Boolean for significance
-    sig = case_when(
-      padj < 0.05 ~ TRUE,
-      padj >= 0.05 ~ FALSE))
- 
-# get genes that had a significant difference
-sigs <- adj %>% filter(sig == "TRUE") %>%  
-  left_join(counts, by = c("pattern", "farm")) %>% 
-  group_by(site, broadclass, farm, pattern) %>% 
-  summarize(median = median(relabun),
-            IQR = IQR(relabun)) %>% 
-  ungroup() %>% 
-  mutate(site = factor(site),
-         farm = factor(farm))
+    ## MEGARES 
+    # resistance class
+    broadclass = sapply(str_split(pattern, "\\|"), `[`, 1),
+    # type of resistance
+    type = sapply(str_split(pattern, "\\|"), `[`, 2),
+    # protein
+    protein = sapply(str_split(pattern, "\\|"), `[`, 3),
+    # gene
+    gene = sapply(str_split(pattern, "\\|"), `[`, 4),
+    ## SAMPLE METADATA
+    # farm number
+    farm = case_when(
+      # if the sample is a control, name it "control"
+      str_detect(name, controls) ~ "control",
+      # otherwise, detect the farm number
+      !str_detect(name, controls) ~ str_remove(str_extract(name, "P(\\d)"), "P")
+    ),
+    # animal number
+    animal = case_when(
+      # if the sample is a control, name it "control"
+      str_detect(name, controls) ~ "control",
+      # otherwise, detect the animal number
+      !str_detect(name, controls) ~ str_remove(str_extract(name, "A(\\d{1,2})"), "A")
+    ),
+    # sample number - this does NOT matter if it's control or not
+    samplenum = sapply(str_split(name, "_"), `[`, 2),
+    # body site
+    site = case_when(
+      # if the sample is a control, name it "control"
+      str_detect(name, controls) ~ "control",
+      # otherwise, detect the animal number
+      !str_detect(name, controls) ~ sapply(str_split(name, "_"), `[`, 4)
+    )
+    # close mutate() parenthesis
+  )
 
-# visualize the major trends
-ggplot(data = sigs, aes(x = site, y = median, group = type)) +
-  geom_point() +
-  geom_jitter() +
-  geom_line() +
-  theme_bw() +
-  labs(x = "Body Site", y = "Median Relative Abundance") +
-  ggtitle("Significantly different proteins by site & farm (total n = 45)") +
-  facet_wrap(~ farm)
 
 
+
+f <- prestotal %>% 
+  group_by(pattern, farm) %>% 
+  summarize(count = sum(presence))

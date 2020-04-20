@@ -3,7 +3,8 @@ title: "AMR Analysis"
 author: "Emily Bean"
 date: "March 12, 2020"
 output: 
-  rmarkdown::github_document
+  rmarkdown::github_document:
+      toc: true
 ---
 
 ```{r setup, include=FALSE}
@@ -13,9 +14,13 @@ require(dplyr)
 require(tidyr)
 require(stringr)
 require(ggplot2)
+require(ggpubr)
 
 # read in data
 counts <- read.table("https://github.com/EmilyB17/amr-brazil/blob/master/data/parsedRelativeAbundanceNoContams.txt?raw=true", sep = "\t", header = TRUE)
+
+# set ggplot2 theme
+theme_set(theme_bw())
 
 # get unique factors for loops
 classes <- unique(counts$broadclass)
@@ -61,7 +66,8 @@ exp <- counts %>%
   summarize()
 
 # show unique proteins
-knitr::kable(exp)
+#knitr::kable(exp)
+
 ```
 
 ```{r}
@@ -76,7 +82,8 @@ hist(counts$relabun, main = "Histogram of Relative Abundance",
 
 Wilcox Rank-Sum test for non-parametric pairwise test of relative abundnace between farms
 
-**Genes**
+#### Genes
+
 ```{r}
 
 # Wilcox rank-sum for pairwise differences between farms
@@ -116,9 +123,40 @@ sigs <- adj %>%
   ungroup() %>% 
   mutate(farm = factor(farm))
 
+## write summary statistics to table
+sum <- sigs %>% 
+  pivot_wider(names_from = farm, values_from = c(median, IQR)) %>% 
+  # add p value
+  left_join(adj, by = "pattern") %>% 
+  select(-c(pattern, pval, sig))
+#write.table(sum, "/Users/epb5360/git/amr-brazil/data/results-tables/wilcox-genes.txt", sep = "\t", row.names = FALSE)
+
 ```
 
 There are `r length(unique(sigs$pattern))` genes that are significantly different between farms, which is difficult to visualize. 
+
+```{r}
+
+# summary statistics on significant genes
+sum <- adj %>% 
+  filter(sig == "TRUE") %>% 
+  left_join(counts, by = "pattern") %>% 
+  group_by(farm, pattern) %>% 
+  summarize(median = median(relabun),
+            IQR = IQR(relabun),
+            mean = mean(relabun),
+            sd = sd(relabun)) %>% 
+  ungroup() %>% 
+  pivot_wider(names_from = farm, values_from = c(median, IQR, mean, sd), names_prefix = "farm_") %>% 
+  left_join(adj, by = "pattern") %>% 
+  select(-c(pval, sig)) %>% 
+  mutate(pattern = str_replace_all(pattern, "\\|", "-"))
+
+# print table
+knitr::kable(sum, format = "markdown", escape = FALSE)
+
+```
+
 
 This plot shows all genes between farms; most decrease from farm 1 to farm 2.
 
@@ -137,10 +175,33 @@ ggplot(data = sigs, aes(x = farm, y = median, group = gene)) +
 ```
 
 
-**Proteins**
+The data is so zero-skewed that it can be misleading to plot just the median and IQR, so below is a plot of whole dataset in the significant genes.
 
 ```{r}
 
+## plot all data (not just  median)
+
+# get significant data
+allsig <- adj %>% 
+  filter(sig == "TRUE") %>% 
+  left_join(counts, by = "pattern") %>% 
+  mutate(farm = factor(farm))
+
+# plot
+ggplot(data = allsig, aes(x = farm, y = relabun,fill = farm)) +
+  geom_violin() +
+  geom_point(position = position_dodge2(width = 0.5), size = 0.3) +
+  facet_grid(pattern~broadclass, scales = "free") +
+  labs(x = "Farm", y = "Relative Abundance", title = "Relative abundance of significant genes")
+
+```
+
+
+
+
+#### Proteins
+
+```{r}
 outsig <- data.frame()
 for(i in 1:length(proteins)) {
   
@@ -172,9 +233,39 @@ sigs <- adj %>%
   ungroup() %>% 
   mutate(farm = factor(farm))
 
+## write summary statistics to table
+sum <- sigs %>% 
+  pivot_wider(names_from = farm, values_from = c(median, IQR)) %>% 
+  # add p value
+  left_join(adj, by = "protein") %>% 
+  select(-c(pval, sig))
+#write.table(sum, "/Users/epb5360/git/amr-brazil/data/results-tables/wilcox-proteins.txt", sep = "\t", row.names = FALSE)
+
 ```
 
 There are `r length(unique(sigs$protein))` significantly different resistance proteins; the plot shows that most are only present in one of the two farms.
+
+```{r}
+
+# summary statistics on significant genes
+sum <- adj %>% 
+  filter(sig == "TRUE") %>% 
+  left_join(counts, by = "protein") %>% 
+  group_by(farm, protein) %>% 
+  summarize(median = median(relabun),
+            IQR = IQR(relabun),
+            mean = mean(relabun),
+            sd = sd(relabun)) %>% 
+  ungroup() %>% 
+  pivot_wider(names_from = farm, values_from = c(median, IQR, mean, sd), names_prefix = "farm_") %>% 
+  left_join(adj, by = "protein") %>% 
+  select(-c(pval, sig))
+
+# print table
+knitr::kable(sum)
+
+```
+
 
 ```{r}
 
@@ -190,9 +281,48 @@ ggplot(data = sigs, aes(x = farm, y = median, group = protein)) +
 
 ```
 
-**Resistance Type**
+
+There are 16 proteins with significant differences, so that's difficult to visualize on one plot. 
 
 ```{r}
+
+
+## plot all data (not just  median)
+
+# get significant data
+allsig <- adj %>% 
+  filter(sig == "TRUE") %>% 
+  left_join(counts, by = "protein") %>% 
+  mutate(farm = factor(farm))
+
+# plot
+ggplot(data = allsig, aes(x = farm, y = relabun, fill = farm)) +
+  geom_violin() +
+  geom_point(position = position_dodge2(width = 0.5), size = 0.3) +
+  facet_wrap(~protein) +
+  labs(x = "Farm", y = "Relative Abundance", title = "Relative abundance of significant proteins")
+
+```
+
+Visualize with density plots; this shows that most of the proteins have marginally higher relative abundance in farm 1.
+
+```{r}
+
+# get significant data
+sigrel <- counts %>% 
+  semi_join(filter(adj, padj < 0.05), by = "protein")
+
+# plot with ggpubr
+ggdensity(sigrel, x = "relabun", y = "..count..", add = "median", 
+          color = "farm", fill = "farm", rug = TRUE) +
+  facet_wrap(~protein, scales = "free")
+
+```
+
+#### Resistance Type
+
+```{r}
+
 
 outsig <- data.frame()
 for(i in 1:length(types)) {
@@ -225,10 +355,40 @@ sigs <- adj %>%
   ungroup() %>% 
   mutate(farm = factor(farm))
 
+## write summary statistics to table
+sum <- sigs %>% 
+  pivot_wider(names_from = farm, values_from = c(median, IQR)) %>% 
+  # add p value
+  left_join(adj, by = "type") %>% 
+  select(-c(pval, sig))
+#write.table(sum, "/Users/epb5360/git/amr-brazil/data/results-tables/wilcox-types.txt", sep = "\t", row.names = FALSE)
 
 ```
 
 There are `r length(unique(sigs$type))` significantly different resistance types; again, the plot shows that most are only present in one of the two farms.
+
+```{r}
+
+# summary statistics on significant genes
+sum <- adj %>% 
+  filter(sig == "TRUE") %>% 
+  left_join(counts, by = "type") %>% 
+  group_by(farm, type) %>% 
+  summarize(median = median(relabun),
+            IQR = IQR(relabun),
+            mean = mean(relabun),
+            sd = sd(relabun)) %>% 
+  ungroup() %>% 
+  pivot_wider(names_from = farm, values_from = c(median, IQR, mean, sd), names_prefix = "farm_") %>% 
+  left_join(adj, by = "type") %>% 
+  select(-c(pval, sig))
+
+# print table
+
+knitr::kable(sum)
+
+```
+
 
 ```{r}
 
@@ -245,12 +405,136 @@ ggplot(data = sigs, aes(x = farm, y = median, group = type)) +
 ```
 
 
+```{r}
+
+## plot all data (not just  median)
+
+# get significant data
+allsig <- adj %>% 
+  filter(sig == "TRUE") %>% 
+  left_join(counts, by = "type") %>% 
+  mutate(farm = factor(farm))
+
+# plot
+ggplot(data = allsig, aes(x = farm, y = relabun, fill = farm)) +
+  geom_violin() +
+  geom_point(position = position_dodge2(width = 0.5), size = 0.3) +
+  facet_wrap(~type) +
+  labs(x = "Farm", y = "Relative Abundance", title = "Relative abundance of significant resistance type")
+
+
+```
+
+
+#### Resistance Class
+
+```{r}
+
+outsig <- data.frame()
+for(i in 1:length(classes)) {
+  
+  w <- wilcox.test(relabun ~ farm, data = filter(counts, broadclass == classes[i]),
+                   exact = FALSE)
+  
+  outsig[i, "class"] <- classes[i]
+  outsig[i, "pval"] <- round(w$p.value, 3)
+  
+}
+
+# adjust p values for false discovery rate
+adj <- outsig %>% 
+  mutate(
+    # adjust p values with FDR
+    padj = p.adjust(pval, method = "fdr", n = length(outsig$pval)),
+    # Boolean for significance
+    sig = case_when(
+      padj < 0.05 ~ TRUE,
+      padj >= 0.05 ~ FALSE))
+
+# get only significant variables and add median + IQR
+sigs <- adj %>% 
+  filter(sig == "TRUE") %>% 
+  left_join(counts, by = c("class" = "broadclass")) %>% 
+  group_by(farm, class) %>% 
+  summarize(median = median(relabun),
+            IQR = IQR(relabun)) %>% 
+  ungroup() %>% 
+  mutate(farm = factor(farm))
+
+## write summary statistics to table
+sum <- sigs %>% 
+  pivot_wider(names_from = farm, values_from = c(median, IQR)) %>% 
+  # add p value
+  left_join(adj, by = "class") %>% 
+  select(-c(pval, sig))
+#write.table(sum, "/Users/epb5360/git/amr-brazil/data/results-tables/wilcox-class.txt", sep = "\t", row.names = FALSE)
+
+```
+
+There are `r length(unique(sigs$class))` significantly different resistance types.
+
+```{r}
+
+# summary statistics on significant genes
+sum <- adj %>% 
+  filter(sig == "TRUE") %>% 
+  left_join(counts, by = c("class" = "broadclass")) %>% 
+  group_by(farm, class) %>% 
+  summarize(median = median(relabun),
+            IQR = IQR(relabun),
+            mean = mean(relabun),
+            sd = sd(relabun)) %>% 
+  ungroup() %>% 
+  pivot_wider(names_from = farm, values_from = c(median, IQR, mean, sd), names_prefix = "farm_") %>% 
+  left_join(adj, by = "class") %>% 
+  select(-c(pval, sig))
+
+
+# print table
+knitr::kable(sum)
+
+```
+
+
+```{r}
+
+# visualize the major trends
+ggplot(data = sigs, aes(x = farm, y = median, group = class)) +
+  geom_point() +
+  geom_jitter() +
+  geom_line() +
+  theme_bw() +
+  labs(x = "Farm", y = "Median Relative Abundance") +
+  ggtitle("Significantly different classes by farm",
+          subtitle = paste0("n = (", length(which(adj$sig == TRUE)), ")"))
+
+```
+
+
+```{r}
+
+## plot all data (not just  median)
+
+# get significant data
+allsig <- adj %>% 
+  filter(sig == "TRUE") %>% 
+  left_join(counts, by = c("class" = "broadclass")) %>% 
+  mutate(farm = factor(farm))
+
+# plot
+ggplot(data = allsig, aes(x = farm, y = relabun, fill = farm)) +
+  geom_violin() +
+  geom_point(position = position_dodge2(width = 0.5), size = 0.3) +
+  facet_wrap(~type) +
+  labs(x = "Farm", y = "Relative Abundance", title = "Relative abundance of significant resistance class")
+
+```
 
 ### Comparisons between body sites
 
 Kruskal-Wallis test for non-parametric comparisons between the 3 body sites, stratified by farm.
 
-**Genes**
+#### Genes
 
 ```{r}
 
@@ -310,9 +594,56 @@ sigs <- adj %>% filter(sig == "TRUE") %>%
   mutate(site = factor(site),
          farm = factor(farm))
 
+## write summary statistics to table
+sum <- sigs %>% 
+  left_join(adj, by = c("pattern", "farm")) %>% 
+  select(-c(pval, sig)) %>% 
+  pivot_wider(names_from = site, values_from = c(median, IQR))
+  
+#write.table(sum, "/Users/epb5360/git/amr-brazil/data/results-tables/kruskal-genes.txt", sep = "\t", row.names = FALSE)
+
 ```
 
-There are `r length(unique(sigs$pattern))` significant genes between body sites.
+There are `r length(unique(sigs$pattern))` significant genes between body sites. The p values and summary statistics are not printed since there are so many.
+
+```{r}
+
+# summary statistics on significant genes
+sumfarm1 <- adj %>% 
+  filter(sig == "TRUE" & farm == 1) %>% 
+  left_join(counts, by = c("pattern", "farm")) %>% 
+  group_by(site, pattern) %>% 
+  summarize(median = median(relabun),
+            IQR = IQR(relabun),
+            mean = mean(relabun),
+            sd = sd(relabun)) %>% 
+  ungroup() %>% 
+  pivot_wider(names_from = site, values_from = c(median, IQR, mean, sd)) %>% 
+  left_join(adj, by = "pattern") %>% 
+  select(-c(pval, sig))
+
+# print table
+#knitr::kable(sumfarm1)
+
+sumfarm2 <- adj %>% 
+  filter(sig == "TRUE" & farm == 2) %>% 
+  left_join(counts, by = c("pattern", "farm")) %>% 
+  group_by(site, pattern) %>% 
+  summarize(median = median(relabun),
+            IQR = IQR(relabun),
+            mean = mean(relabun),
+            sd = sd(relabun)) %>% 
+  ungroup() %>% 
+  pivot_wider(names_from = site, values_from = c(median, IQR, mean, sd)) %>% 
+  left_join(adj, by = "pattern") %>% 
+  select(-c(pval, sig))
+
+# print table
+#knitr::kable(sumfarm2)
+
+```
+
+
 
 This plot visualizes the differences; most are higher in feces, then rumen, then SNP. However, one gene is higher in SNP.
 
@@ -332,7 +663,7 @@ ggplot(data = sigs, aes(x = site, y = median, group = pattern)) +
 ```
 
 
-**Proteins**
+#### Proteins
 
 ```{r}
 
@@ -391,8 +722,59 @@ sigs <- adj %>% filter(sig == "TRUE") %>%
   mutate(site = factor(site),
          farm = factor(farm))
 
+## write summary statistics to table
+## write summary statistics to table
+sum <- sigs %>% 
+  left_join(adj, by = c("protein", "farm")) %>% 
+  select(-c(pval, sig)) %>% 
+  pivot_wider(names_from = site, values_from = c(median, IQR)) %>% 
+  arrange(farm)
+#write.table(sum, "/Users/epb5360/git/amr-brazil/data/results-tables/kruskal-proteins.txt", sep = "\t", row.names = FALSE)
+
 
 ```
+
+
+There are `r length(unique(sigs$protein))` significant proteins in the dataset.
+
+
+```{r}
+
+# summary statistics on significant genes
+sumfarm1 <- adj %>% 
+  filter(sig == "TRUE" & farm == 1) %>% 
+  left_join(counts, by = c("protein", "farm")) %>% 
+  group_by(site, protein) %>% 
+  summarize(median = median(relabun),
+            IQR = IQR(relabun),
+            mean = mean(relabun),
+            sd = sd(relabun)) %>% 
+  ungroup() %>% 
+  pivot_wider(names_from = site, values_from = c(median, IQR, mean, sd)) %>% 
+  left_join(adj, by = "protein") %>% 
+  select(-c(pval, sig))
+
+# print table
+#knitr::kable(sumfarm1)
+
+sumfarm2 <- adj %>% 
+  filter(sig == "TRUE" & farm == 2) %>% 
+  left_join(counts, by = c("protein", "farm")) %>% 
+  group_by(site, protein) %>% 
+  summarize(median = median(relabun),
+            IQR = IQR(relabun),
+            mean = mean(relabun),
+            sd = sd(relabun)) %>% 
+  ungroup() %>% 
+  pivot_wider(names_from = site, values_from = c(median, IQR, mean, sd)) %>% 
+  left_join(adj, by = "protein") %>% 
+  select(-c(pval, sig))
+
+# print table
+#knitr::kable(sumfarm2)
+
+```
+
 
 ```{r}
 
@@ -410,7 +792,7 @@ ggplot(data = sigs, aes(x = site, y = median, group = protein)) +
 ```
 
 
-**Resistance Type**
+#### Resistance Type
 
 ```{r}
 
@@ -469,6 +851,56 @@ sigs <- adj %>% filter(sig == "TRUE") %>%
   ungroup() %>% 
   mutate(site = factor(site),
          farm = factor(farm))
+
+## write summary statistics to table
+## write summary statistics to table
+sum <- sigs %>% 
+  left_join(adj, by = c("type", "farm")) %>% 
+  select(-c(pval, sig)) %>% 
+  pivot_wider(names_from = site, values_from = c(median, IQR)) %>% 
+  arrange(farm)
+#write.table(sum, "/Users/epb5360/git/amr-brazil/data/results-tables/kruskal-types.txt", sep = "\t", row.names = FALSE)
+
+```
+
+
+There are `r length(unique(sigs$type))` significant proteins in the dataset.
+
+```{r}
+
+# summary statistics on significant genes
+sumfarm1 <- adj %>% 
+  filter(sig == "TRUE" & farm == 1) %>% 
+  left_join(counts, by = c("type", "farm")) %>% 
+  group_by(site, type) %>% 
+  summarize(median = median(relabun),
+            IQR = IQR(relabun),
+            mean = mean(relabun),
+            sd = sd(relabun)) %>% 
+  ungroup() %>% 
+  pivot_wider(names_from = site, values_from = c(median, IQR, mean, sd)) %>% 
+  left_join(adj, by = "type") %>% 
+  select(-c(pval, sig))
+
+# print table
+#knitr::kable(sumfarm1)
+
+sumfarm2 <- adj %>% 
+  filter(sig == "TRUE" & farm == 2) %>% 
+  left_join(counts, by = c("type", "farm")) %>% 
+  group_by(site, type) %>% 
+  summarize(median = median(relabun),
+            IQR = IQR(relabun),
+            mean = mean(relabun),
+            sd = sd(relabun)) %>% 
+  ungroup() %>% 
+  pivot_wider(names_from = site, values_from = c(median, IQR, mean, sd)) %>% 
+  left_join(adj, by = "type") %>% 
+  select(-c(pval, sig))
+
+# print table
+#knitr::kable(sumfarm2)
+
 ```
 
 
@@ -481,9 +913,137 @@ ggplot(data = sigs, aes(x = site, y = median, group = type)) +
   geom_line() +
   theme_bw() +
   labs(x = "Body Site", y = "Median Relative Abundance") +
-  ggtitle("Significantly different proteins by site & farm",
+  ggtitle("Significantly different types by site & farm",
           subtitle = paste0("n = (", length(which(adj$sig == TRUE)), ")")) +
   facet_wrap(~ farm)
 
 ```
 
+
+#### Class
+
+```{r}
+
+
+## Stratify for each farm
+counts <- counts %>% mutate(farm = factor(farm))
+farms <- levels(counts$farm)
+# create empty dataframe to fill within the loop
+outsig <- data.frame()
+
+for(j in 1:length(farms)) {
+  
+  # iterate through all 666 genes
+  for(i in 1:length(classes)) {
+    
+    # perform Kruskal-Wallis test
+    k <- kruskal.test(relabun ~ site, data = filter(counts, broadclass == classes[i] &
+                                                      farm == farms[j]))
+    
+   
+    # some farms do not have the gene present; mark as 'absent'
+    if(is.na(k$p.value)) {
+      
+      pvaldat <- NA
+      
+    } else {
+      
+      pvaldat <- round(k$p.value, 3)
+      
+    } 
+        
+    # collect variables to output DF
+    outsig <- rbind(outsig,
+                    data.frame(farm = farms[j],
+                               class = classes[i],
+                               pval = pvaldat))
+  }
+}
+
+# adjust p vals for multiple comparisons with false discovery rate
+adj <- outsig %>% 
+  mutate(
+    # adjust p values with FDR
+    padj = p.adjust(pval, method = "fdr", n = length(outsig$pval)),
+    # Boolean for significance
+    sig = case_when(
+      padj < 0.05 ~ TRUE,
+      padj >= 0.05 ~ FALSE))
+ 
+# get genes that had a significant difference
+sigs <- adj %>% filter(sig == "TRUE") %>%  
+  left_join(counts, by = c("class" = "broadclass", "farm")) %>% 
+  group_by(site, class, farm) %>% 
+  summarize(median = median(relabun),
+            IQR = IQR(relabun)) %>% 
+  ungroup() %>% 
+  mutate(site = factor(site),
+         farm = factor(farm))
+
+## write summary statistics to table
+## write summary statistics to table
+sum <- sigs %>% 
+  left_join(adj, by = c("class", "farm")) %>% 
+  select(-c(pval, sig)) %>% 
+  pivot_wider(names_from = site, values_from = c(median, IQR)) %>% 
+  arrange(farm)
+#write.table(sum, "/Users/epb5360/git/amr-brazil/data/results-tables/kruskal-class.txt", sep = "\t", row.names = FALSE)
+
+
+```
+
+
+There are `r length(unique(sigs$class))` significant classes in the dataset.
+
+```{r}
+
+# summary statistics on significant genes
+sumfarm1 <- adj %>% 
+  filter(sig == "TRUE" & farm == 1) %>% 
+  left_join(counts, by = c("class" = "broadclass", "farm")) %>% 
+  group_by(site, class) %>% 
+  summarize(median = median(relabun),
+            IQR = IQR(relabun),
+            mean = mean(relabun),
+            sd = sd(relabun)) %>% 
+  ungroup() %>% 
+  pivot_wider(names_from = site, values_from = c(median, IQR, mean, sd)) %>% 
+  left_join(adj, by = "class") %>% 
+  select(-c(pval, sig))
+
+# print table
+#knitr::kable(sumfarm1)
+
+sumfarm2 <- adj %>% 
+  filter(sig == "TRUE" & farm == 2) %>% 
+  left_join(counts, by = c("class" = "broadclass", "farm")) %>% 
+  group_by(site, class) %>% 
+  summarize(median = median(relabun),
+            IQR = IQR(relabun),
+            mean = mean(relabun),
+            sd = sd(relabun)) %>% 
+  ungroup() %>% 
+  pivot_wider(names_from = site, values_from = c(median, IQR, mean, sd)) %>% 
+  left_join(adj, by = "class") %>% 
+  select(-c(pval, sig))
+
+# print table
+#knitr::kable(sumfarm2)
+
+```
+
+
+```{r}
+
+# visualize the major trends
+ggplot(data = sigs, aes(x = site, y = median, group = class)) +
+  geom_point() +
+  geom_jitter() +
+  geom_line() +
+  theme_bw() +
+  labs(x = "Body Site", y = "Median Relative Abundance") +
+  ggtitle("Significantly different classes by site & farm",
+          subtitle = paste0("n = (", length(which(adj$sig == TRUE)), ")")) +
+  facet_wrap(~ farm)
+
+```

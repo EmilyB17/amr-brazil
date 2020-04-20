@@ -256,6 +256,7 @@ norm <- counts %>%
   # keep only final normalization
   select(pattern, names, normseqdepth)
 
+# calculate presence/absence
 
 # calculate relative abundance
 

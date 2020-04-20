@@ -3,30 +3,33 @@ AMR Analysis
 Emily Bean
 March 12, 2020
 
-Analysis Structure
-------------------
+## Analysis Structure
 
 **Comparisons**
 
-Pairwise comparisons between Farm 1 and Farm 2.
+Pairwise comparisons between Farm 1 and Farm 2.  
 Comparisons between body sites (rumen, feces, nasal swab) at each farm.
 
-MEGARES database categories include: type of resistance, resistance class within type (i.e. type of drug within Drug resistance), protein class, and gene. Pairwise comparisons can be made for all of these but it seems to make the most biological sense to compare genes, protein classes, and resistance classes.
+MEGARES database categories include: type of resistance, resistance
+class within type (i.e. type of drug within Drug resistance), protein
+class, and gene. Pairwise comparisons can be made for all of these but
+it seems to make the most biological sense to compare genes, protein
+classes, and resistance classes.
 
-------------------------------------------------------------------------
+-----
 
-Therefore, here is the proposed comparison structure:
-Genes: Farm 1 vs Farm 2
-Proteins: Farm 1 vs Farm 2
-Resistance class: Farm 1 vs Farm 2
+Therefore, here is the proposed comparison structure:  
+Genes: Farm 1 vs Farm 2  
+Proteins: Farm 1 vs Farm 2  
+Resistance class: Farm 1 vs Farm 2  
 **Wilcox Rank Sum test**
 
-Genes: SNP vs Rumen vs Feces (Farm 1 and Farm 2)
-Proteins: SNP vs Rumen vs Feces (Farm 1 and Farm 2)
-Resistance class: SNP vs Rumen vs Feces (Farm 1 and Farm 2)
+Genes: SNP vs Rumen vs Feces (Farm 1 and Farm 2)  
+Proteins: SNP vs Rumen vs Feces (Farm 1 and Farm 2)  
+Resistance class: SNP vs Rumen vs Feces (Farm 1 and Farm 2)  
 **Kruskal Wallis test**
 
-------------------------------------------------------------------------
+-----
 
 ### Data Exploration
 
@@ -37,181 +40,8 @@ exp <- counts %>%
   summarize()
 
 # show unique proteins
-knitr::kable(exp)
+#knitr::kable(exp)
 ```
-
-| broadclass     | type                                                | protein                                                       |
-|:---------------|:----------------------------------------------------|:--------------------------------------------------------------|
-| Biocides       | Acetate\_resistance                                 | Acetate\_resistance\_protein                                  |
-| Biocides       | Acid\_resistance                                    | Acid\_resistance\_protein                                     |
-| Biocides       | Acid\_resistance                                    | Acid\_resistance\_regulator                                   |
-| Biocides       | Biguanide\_resistance                               | Biguanide\_cation\_efflux                                     |
-| Biocides       | Multi-biocide\_resistance                           | Multi-biocide\_ABC\_efflux\_pump                              |
-| Biocides       | Multi-biocide\_resistance                           | Multi-biocide\_MATE\_efflux\_pump                             |
-| Biocides       | Multi-biocide\_resistance                           | Multi-biocide\_MFS\_efflux\_pump                              |
-| Biocides       | Multi-biocide\_resistance                           | Multi-biocide\_resistance\_protein                            |
-| Biocides       | Multi-biocide\_resistance                           | Multi-biocide\_resistance\_regulator                          |
-| Biocides       | Multi-biocide\_resistance                           | Multi-biocide\_RND\_efflux\_pump                              |
-| Biocides       | Multi-biocide\_resistance                           | Multi-biocide\_RND\_efflux\_regulator                         |
-| Biocides       | Paraquat\_resistance                                | Paraquat\_resistance\_protein                                 |
-| Biocides       | Peroxide\_resistance                                | peroxide\_resistance\_protein                                 |
-| Biocides       | Peroxide\_resistance                                | Peroxide\_resistance\_stress\_protein                         |
-| Biocides       | Phenolic\_compound\_resistance                      | Phenolic\_RND\_efflux\_pump                                   |
-| Biocides       | Phenolic\_compound\_resistance                      | Triclosan-resistant\_mutation                                 |
-| Biocides       | Quaternary\_Ammonium\_Compounds\_(QACs)\_resistance | QAC-resistant\_protein\_UDP\_glucose\_4\_epimerase            |
-| Biocides       | Quaternary\_Ammonium\_Compounds\_(QACs)\_resistance | QAC\_efflux\_pump                                             |
-| Drugs          | Aminocoumarins                                      | Aminocoumarin-resistant\_DNA\_topoisomerases                  |
-| Drugs          | Aminocoumarins                                      | Aminocoumarin\_efflux\_pump                                   |
-| Drugs          | Aminoglycosides                                     | 16S\_rRNA\_methyltransferases                                 |
-| Drugs          | Aminoglycosides                                     | Aminoglycoside-resistant\_16S\_ribosomal\_subunit\_protein    |
-| Drugs          | Aminoglycosides                                     | Aminoglycoside\_efflux\_pumps                                 |
-| Drugs          | Aminoglycosides                                     | Aminoglycoside\_N-acetyltransferases                          |
-| Drugs          | Aminoglycosides                                     | Aminoglycoside\_O-nucleotidyltransferases                     |
-| Drugs          | Aminoglycosides                                     | Aminoglycoside\_O-phosphotransferases                         |
-| Drugs          | Bacitracin                                          | Bacitracin\_ABC\_transporter                                  |
-| Drugs          | Bacitracin                                          | Undecaprenyl\_pyrophosphate\_phosphatase                      |
-| Drugs          | betalactams                                         | Class\_A\_betalactamases                                      |
-| Drugs          | betalactams                                         | Class\_B\_betalactamases                                      |
-| Drugs          | betalactams                                         | Class\_C\_betalactamases                                      |
-| Drugs          | betalactams                                         | Class\_D\_betalactamases                                      |
-| Drugs          | betalactams                                         | Mutant\_porin\_proteins                                       |
-| Drugs          | betalactams                                         | Penicillin\_binding\_protein                                  |
-| Drugs          | betalactams                                         | Penicillin\_binding\_protein\_regulator                       |
-| Drugs          | Cationic\_antimicrobial\_peptides                   | Cationic\_peptide-resistant\_16S\_ribosomal\_subunit\_protein |
-| Drugs          | Cationic\_antimicrobial\_peptides                   | Defensin-resistant\_mprF                                      |
-| Drugs          | Cationic\_antimicrobial\_peptides                   | Lipid\_A\_modification                                        |
-| Drugs          | Cationic\_antimicrobial\_peptides                   | Polymyxin\_B\_resistance\_regulator                           |
-| Drugs          | Elfamycins                                          | EF-Tu\_inhibition                                             |
-| Drugs          | Elfamycins                                          | Elfamycin\_efflux\_pumps                                      |
-| Drugs          | Fluoroquinolones                                    | Fluoroquinolone-resistant\_DNA\_topoisomerases                |
-| Drugs          | Fluoroquinolones                                    | Fluoroquinolone\_ABC\_efflux\_pump                            |
-| Drugs          | Fluoroquinolones                                    | Quinolone\_active\_efflux                                     |
-| Drugs          | Fluoroquinolones                                    | Quinolone\_resistance\_protein\_Qnr                           |
-| Drugs          | Fosfomycin                                          | Fosfomycin\_MFS\_efflux\_pump                                 |
-| Drugs          | Fosfomycin                                          | Fosfomycin\_phosphorylation                                   |
-| Drugs          | Fosfomycin                                          | Fosfomycin\_target\_mutation                                  |
-| Drugs          | Fosfomycin                                          | Fosfomycin\_thiol\_transferases                               |
-| Drugs          | Fusidic\_acid                                       | Fusidic\_acid-resistant\_mutation                             |
-| Drugs          | Glycopeptides                                       | Bleomycin\_resistance\_protein                                |
-| Drugs          | Glycopeptides                                       | VanA-type\_accessory\_protein                                 |
-| Drugs          | Glycopeptides                                       | VanA-type\_regulator                                          |
-| Drugs          | Glycopeptides                                       | VanA-type\_resistance\_protein                                |
-| Drugs          | Glycopeptides                                       | VanB-type\_regulator                                          |
-| Drugs          | Glycopeptides                                       | VanB-type\_resistance\_protein                                |
-| Drugs          | Glycopeptides                                       | VanC-type\_regulator                                          |
-| Drugs          | Glycopeptides                                       | VanC-type\_resistance\_protein                                |
-| Drugs          | Glycopeptides                                       | Vancomycin-resistant\_mutation                                |
-| Drugs          | Glycopeptides                                       | VanD-type\_accessory\_protein                                 |
-| Drugs          | Glycopeptides                                       | VanD-type\_regulator                                          |
-| Drugs          | Glycopeptides                                       | VanD-type\_resistance\_protein                                |
-| Drugs          | Glycopeptides                                       | VanE-type\_regulator                                          |
-| Drugs          | Glycopeptides                                       | VanE-type\_resistance\_protein                                |
-| Drugs          | Glycopeptides                                       | VanF-type\_accessory\_protein                                 |
-| Drugs          | Glycopeptides                                       | VanG-type\_regulator                                          |
-| Drugs          | Glycopeptides                                       | VanG-type\_resistance\_protein                                |
-| Drugs          | Glycopeptides                                       | VanI-type\_resistance\_protein                                |
-| Drugs          | Glycopeptides                                       | VanL-type\_regulator                                          |
-| Drugs          | Glycopeptides                                       | VanM-type\_regulator                                          |
-| Drugs          | Glycopeptides                                       | VanM-type\_resistance\_protein                                |
-| Drugs          | Glycopeptides                                       | VanN-type\_resistance\_protein                                |
-| Drugs          | Glycopeptides                                       | VanO-type\_regulator                                          |
-| Drugs          | Glycopeptides                                       | VanO-type\_resistance\_protein                                |
-| Drugs          | Lipopeptides                                        | Colistin-resistant\_mutant                                    |
-| Drugs          | Lipopeptides                                        | Colistin\_phosphoethanolamine\_transferase                    |
-| Drugs          | Lipopeptides                                        | Daptomycin-resistant\_beta-subunit\_of\_RNA\_polymerase\_RpoB |
-| Drugs          | Lipopeptides                                        | Daptomycin-resistant\_beta-subunit\_of\_RNA\_polymerase\_RpoC |
-| Drugs          | Lipopeptides                                        | Daptomycin-resistant\_mutant                                  |
-| Drugs          | Lipopeptides                                        | Lysocin-resistant\_mutant                                     |
-| Drugs          | Metronidazole                                       | nim\_nitroimidazole\_reductase                                |
-| Drugs          | MLS                                                 | 23S\_rRNA\_methyltransferases                                 |
-| Drugs          | MLS                                                 | Lincosamide\_nucleotidyltransferases                          |
-| Drugs          | MLS                                                 | Macrolide-resistant\_23S\_rRNA\_mutation                      |
-| Drugs          | MLS                                                 | Macrolide\_esterases                                          |
-| Drugs          | MLS                                                 | Macrolide\_glycosyltransferases                               |
-| Drugs          | MLS                                                 | Macrolide\_phosphotransferases                                |
-| Drugs          | MLS                                                 | MLS\_resistance\_ABC\_efflux\_pumps                           |
-| Drugs          | MLS                                                 | MLS\_resistance\_MFS\_efflux\_pumps                           |
-| Drugs          | MLS                                                 | Streptogramin\_A\_O-acetyltransferase                         |
-| Drugs          | MLS                                                 | Streptogramin\_B\_ester\_bond\_cleavage                       |
-| Drugs          | Multi-drug\_resistance                              | MDR\_23S\_ribosomal\_RNA\_methyltransferase                   |
-| Drugs          | Multi-drug\_resistance                              | MDR\_23S\_rRNA\_mutation                                      |
-| Drugs          | Multi-drug\_resistance                              | MDR\_mutant\_porin\_proteins                                  |
-| Drugs          | Multi-drug\_resistance                              | MDR\_regulator                                                |
-| Drugs          | Multi-drug\_resistance                              | Multi-drug\_ABC\_efflux\_pumps                                |
-| Drugs          | Multi-drug\_resistance                              | Multi-drug\_MFS\_efflux\_pumps                                |
-| Drugs          | Multi-drug\_resistance                              | Multi-drug\_RND\_efflux\_pumps                                |
-| Drugs          | Multi-drug\_resistance                              | Multi-drug\_RND\_efflux\_regulator                            |
-| Drugs          | Mupirocin                                           | Mupirocin-resistant\_isoleucyl-tRNA\_synthetase               |
-| Drugs          | Mycobacterium\_tuberculosis-specific\_Drug          | Ethambutol-resistant\_mutant                                  |
-| Drugs          | Mycobacterium\_tuberculosis-specific\_Drug          | Ethionamide-resistant\_mutant                                 |
-| Drugs          | Mycobacterium\_tuberculosis-specific\_Drug          | Isoniazid-resistant\_mutant                                   |
-| Drugs          | Mycobacterium\_tuberculosis-specific\_Drug          | Para-aminosalicylic\_acid\_resistant\_mutant                  |
-| Drugs          | Mycobacterium\_tuberculosis-specific\_Drug          | Pyrazinamide-resistant\_mutant                                |
-| Drugs          | Nucleosides                                         | Streptothricin\_acetyltransferase                             |
-| Drugs          | Oxazolidinone                                       | Oxazolidinone-resistant\_23S\_rRNA\_mutation                  |
-| Drugs          | Pactamycin                                          | Pactamycin-resistant\_16S\_ribosomal\_subunit\_protein        |
-| Drugs          | Phenicol                                            | Chloramphenicol\_acetyltransferases                           |
-| Drugs          | Phenicol                                            | Chloramphenicol\_hydrolase                                    |
-| Drugs          | Phenicol                                            | Chloramphenicol\_phosphotransferase                           |
-| Drugs          | Phenicol                                            | Phenicol-resistant\_23S\_rRNA\_mutation                       |
-| Drugs          | Phenicol                                            | Phenicol\_resistance\_MFS\_efflux\_pumps                      |
-| Drugs          | Pleuromutilin                                       | Pleuromutilin-resistant\_23S\_rRNA\_mutation                  |
-| Drugs          | Rifampin                                            | Monooxygenase                                                 |
-| Drugs          | Rifampin                                            | Rifampin-resistant\_beta-subunit\_of\_RNA\_polymerase\_RpoB   |
-| Drugs          | Rifampin                                            | Rifampin\_ADP-ribosyltransferase\_Arr                         |
-| Drugs          | Rifampin                                            | Rifampin\_phosphotransferase                                  |
-| Drugs          | Rifampin                                            | RNA-polymerase\_binding\_protein                              |
-| Drugs          | Sulfonamides                                        | Sulfonamide-resistant\_dihydropteroate\_synthases             |
-| Drugs          | Tetracenomycin                                      | Tetracenomycin\_MFS\_efflux\_pump                             |
-| Drugs          | Tetracyclines                                       | Tetracycline-resistant\_16S\_ribosomal\_subunit\_protein      |
-| Drugs          | Tetracyclines                                       | Tetracycline\_inactivation\_enzymes                           |
-| Drugs          | Tetracyclines                                       | Tetracycline\_resistance\_ABC\_efflux\_pumps                  |
-| Drugs          | Tetracyclines                                       | Tetracycline\_resistance\_MFS\_efflux\_pumps                  |
-| Drugs          | Tetracyclines                                       | Tetracycline\_resistance\_MFS\_efflux\_regulator              |
-| Drugs          | Tetracyclines                                       | Tetracycline\_resistance\_ribosomal\_protection\_proteins     |
-| Drugs          | Tetracyclines                                       | Tetracycline\_transcriptional\_repressor                      |
-| Drugs          | Trimethoprim                                        | Dihydrofolate\_reductase                                      |
-| Metals         | Aluminum\_resistance                                | Aluminum\_ATPase\_                                            |
-| Metals         | Arsenic\_resistance                                 | Arsenic\_resistance\_protein                                  |
-| Metals         | Arsenic\_resistance                                 | Arsenic\_resistance\_regulator                                |
-| Metals         | Arsenic\_resistance                                 | Arsenite\_oxidase\_regulator                                  |
-| Metals         | Cadmium\_resistance                                 | Cadmium\_resistance\_regulator                                |
-| Metals         | Chromium\_resistance                                | Chromium\_resistance\_protein                                 |
-| Metals         | Cobalt\_resistance                                  | Cobalt\_transporting\_ATPase                                  |
-| Metals         | Copper\_resistance                                  | Copper\_resistance\_protein                                   |
-| Metals         | Copper\_resistance                                  | Copper\_resistance\_regulator                                 |
-| Metals         | Iron\_resistance                                    | Iron\_resistance\_protein                                     |
-| Metals         | Lead\_resistance                                    | Lead\_P-type\_ATPase\_transporter                             |
-| Metals         | Mercury\_resistance                                 | Mercury\_resistance\_protein                                  |
-| Metals         | Mercury\_resistance                                 | Mercury\_resistance\_regulator                                |
-| Metals         | Multi-metal\_resistance                             | Multi-metal\_ABC\_efflux\_pumps                               |
-| Metals         | Multi-metal\_resistance                             | Multi-metal\_resistance\_protein                              |
-| Metals         | Multi-metal\_resistance                             | Multi-metal\_resistance\_regulator                            |
-| Metals         | Multi-metal\_resistance                             | Multi-metal\_RND\_efflux\_pumps                               |
-| Metals         | Multi-metal\_resistance                             | Multi-metal\_RND\_efflux\_regulator                           |
-| Metals         | Nickel\_resistance                                  | Nickel\_ABC\_efflux\_pumps                                    |
-| Metals         | Nickel\_resistance                                  | Nickel\_ABC\_efflux\_regulator                                |
-| Metals         | Nickel\_resistance                                  | Nickel\_MFS\_efflux\_pumps                                    |
-| Metals         | Nickel\_resistance                                  | Nickel\_resistance\_regulator                                 |
-| Metals         | Sodium\_resistance                                  | Sodium\_resistance\_protein                                   |
-| Metals         | Tellurium\_resistance                               | Tellurium\_resistance\_protein                                |
-| Metals         | Zinc\_resistance                                    | Zinc\_resistance\_protein                                     |
-| Metals         | Zinc\_resistance                                    | Zinc\_resistance\_regulator                                   |
-| Multi-compound | Biocide\_and\_metal\_resistance                     | Biocide\_and\_metal\_resistance\_protein                      |
-| Multi-compound | Biocide\_and\_metal\_resistance                     | Biocide\_and\_metal\_resistance\_regulator                    |
-| Multi-compound | Drug\_and\_biocide\_and\_metal\_resistance          | Drug\_and\_biocide\_and\_metal\_MFS\_efflux\_pumps            |
-| Multi-compound | Drug\_and\_biocide\_and\_metal\_resistance          | Drug\_and\_biocide\_and\_metal\_resistance\_regulator         |
-| Multi-compound | Drug\_and\_biocide\_and\_metal\_resistance          | Drug\_and\_biocide\_and\_metal\_RND\_efflux\_pumps            |
-| Multi-compound | Drug\_and\_biocide\_and\_metal\_resistance          | Drug\_and\_biocide\_and\_metal\_RND\_efflux\_regulator        |
-| Multi-compound | Drug\_and\_biocide\_resistance                      | Drug\_and\_biocide\_ABC\_efflux\_pumps                        |
-| Multi-compound | Drug\_and\_biocide\_resistance                      | Drug\_and\_biocide\_ABC\_efflux\_regulator                    |
-| Multi-compound | Drug\_and\_biocide\_resistance                      | Drug\_and\_biocide\_MATE\_efflux\_pumps                       |
-| Multi-compound | Drug\_and\_biocide\_resistance                      | Drug\_and\_biocide\_MFS\_efflux\_pumps                        |
-| Multi-compound | Drug\_and\_biocide\_resistance                      | Drug\_and\_biocide\_MFS\_efflux\_regulator                    |
-| Multi-compound | Drug\_and\_biocide\_resistance                      | Drug\_and\_biocide\_RND\_efflux\_pumps                        |
-| Multi-compound | Drug\_and\_biocide\_resistance                      | Drug\_and\_biocide\_RND\_efflux\_regulator                    |
-| Multi-compound | Drug\_and\_biocide\_resistance                      | Drug\_and\_biocide\_SMR\_efflux\_pumps                        |
-| Multi-compound | Drug\_and\_biocide\_resistance                      | Drug\_and\_biocide\_SMR\_efflux\_regulator                    |
 
 ``` r
 # data is not normally distributed and is very zero-skewed
@@ -219,13 +49,14 @@ hist(counts$relabun, main = "Histogram of Relative Abundance",
      xlab = "Relative abundance", ylab = "Frequency")
 ```
 
-<img src="statAnalysis_files/figure-markdown_github/unnamed-chunk-2-1.png" style="display: block; margin: auto;" />
+<img src="statAnalysis_files/figure-gfm/unnamed-chunk-2-1.png" style="display: block; margin: auto;" />
 
 ### Pairwise comparisons between farms
 
-Wilcox Rank-Sum test for non-parametric pairwise test of relative abundnace between farms
+Wilcox Rank-Sum test for non-parametric pairwise test of relative
+abundnace between farms
 
-**Genes**
+#### Genes
 
 ``` r
 # Wilcox rank-sum for pairwise differences between farms
@@ -264,11 +95,49 @@ sigs <- adj %>%
             IQR = IQR(relabun)) %>% 
   ungroup() %>% 
   mutate(farm = factor(farm))
+
+## write summary statistics to table
+sum <- sigs %>% 
+  pivot_wider(names_from = farm, values_from = c(median, IQR)) %>% 
+  # add p value
+  left_join(adj, by = "pattern") %>% 
+  select(-c(pattern, pval, sig))
+#write.table(sum, "/Users/epb5360/git/amr-brazil/data/results-tables/wilcox-genes.txt", sep = "\t", row.names = FALSE)
 ```
 
-There are 5 genes that are significantly different between farms, which is difficult to visualize.
+There are 5 genes that are significantly different between farms, which
+is difficult to visualize.
 
-This plot shows all genes between farms; most decrease from farm 1 to farm 2.
+``` r
+# summary statistics on significant genes
+sum <- adj %>% 
+  filter(sig == "TRUE") %>% 
+  left_join(counts, by = "pattern") %>% 
+  group_by(farm, pattern) %>% 
+  summarize(median = median(relabun),
+            IQR = IQR(relabun),
+            mean = mean(relabun),
+            sd = sd(relabun)) %>% 
+  ungroup() %>% 
+  pivot_wider(names_from = farm, values_from = c(median, IQR, mean, sd), names_prefix = "farm_") %>% 
+  left_join(adj, by = "pattern") %>% 
+  select(-c(pval, sig)) %>% 
+  mutate(pattern = str_replace_all(pattern, "\\|", "-"))
+
+# print table
+knitr::kable(sum, format = "markdown", escape = FALSE)
+```
+
+| pattern                                                             | median\_farm\_1 | median\_farm\_2 | IQR\_farm\_1 | IQR\_farm\_2 | mean\_farm\_1 | mean\_farm\_2 | sd\_farm\_1 | sd\_farm\_2 | padj |
+| :------------------------------------------------------------------ | --------------: | --------------: | -----------: | -----------: | ------------: | ------------: | ----------: | ----------: | ---: |
+| Drugs-MLS-Lincosamide\_nucleotidyltransferases-LNUB                 |       0.0000000 |               0 |    0.0147288 |            0 |     0.0608790 |     0.0000000 |   0.1654859 |   0.0000000 |    0 |
+| Drugs-Multi-drug\_resistance-Multi-drug\_ABC\_efflux\_pumps-LSAE    |       0.0000000 |               0 |    0.0147288 |            0 |     0.0608790 |     0.0000000 |   0.1654859 |   0.0000000 |    0 |
+| Drugs-Multi-drug\_resistance-Multi-drug\_RND\_efflux\_pumps-MUXB    |       0.0681038 |               0 |    0.1757803 |            0 |     0.1387449 |     0.0360132 |   0.2030432 |   0.1179626 |    0 |
+| Drugs-Nucleosides-Streptothricin\_acetyltransferase-SAT             |       0.0000000 |               0 |    0.0340065 |            0 |     0.0530855 |     0.0043774 |   0.1653840 |   0.0287047 |    0 |
+| Metals-Multi-metal\_resistance-Multi-metal\_RND\_efflux\_pumps-CZCP |       0.0000000 |               0 |    0.1358076 |            0 |     0.0983806 |     0.0167831 |   0.1826834 |   0.0796361 |    0 |
+
+This plot shows all genes between farms; most decrease from farm 1 to
+farm 2.
 
 ``` r
 # visualize the major trends
@@ -282,9 +151,32 @@ ggplot(data = sigs, aes(x = farm, y = median, group = gene)) +
           subtitle = paste0("n = (", length(which(adj$sig == TRUE)), ")"))
 ```
 
-<img src="statAnalysis_files/figure-markdown_github/unnamed-chunk-4-1.png" style="display: block; margin: auto;" />
+<img src="statAnalysis_files/figure-gfm/unnamed-chunk-5-1.png" style="display: block; margin: auto;" />
 
-**Proteins**
+The data is so zero-skewed that it can be misleading to plot just the
+median and IQR, so below is a plot of whole dataset in the significant
+genes.
+
+``` r
+## plot all data (not just  median)
+
+# get significant data
+allsig <- adj %>% 
+  filter(sig == "TRUE") %>% 
+  left_join(counts, by = "pattern") %>% 
+  mutate(farm = factor(farm))
+
+# plot
+ggplot(data = allsig, aes(x = farm, y = relabun,fill = farm)) +
+  geom_violin() +
+  geom_point(position = position_dodge2(width = 0.5), size = 0.3) +
+  facet_grid(pattern~broadclass, scales = "free") +
+  labs(x = "Farm", y = "Relative Abundance", title = "Relative abundance of significant genes")
+```
+
+<img src="statAnalysis_files/figure-gfm/unnamed-chunk-6-1.png" style="display: block; margin: auto;" />
+
+#### Proteins
 
 ``` r
 outsig <- data.frame()
@@ -317,9 +209,56 @@ sigs <- adj %>%
             IQR = IQR(relabun)) %>% 
   ungroup() %>% 
   mutate(farm = factor(farm))
+
+## write summary statistics to table
+sum <- sigs %>% 
+  pivot_wider(names_from = farm, values_from = c(median, IQR)) %>% 
+  # add p value
+  left_join(adj, by = "protein") %>% 
+  select(-c(pval, sig))
+#write.table(sum, "/Users/epb5360/git/amr-brazil/data/results-tables/wilcox-proteins.txt", sep = "\t", row.names = FALSE)
 ```
 
-There are 16 significantly different resistance proteins; the plot shows that most are only present in one of the two farms.
+There are 16 significantly different resistance proteins; the plot shows
+that most are only present in one of the two farms.
+
+``` r
+# summary statistics on significant genes
+sum <- adj %>% 
+  filter(sig == "TRUE") %>% 
+  left_join(counts, by = "protein") %>% 
+  group_by(farm, protein) %>% 
+  summarize(median = median(relabun),
+            IQR = IQR(relabun),
+            mean = mean(relabun),
+            sd = sd(relabun)) %>% 
+  ungroup() %>% 
+  pivot_wider(names_from = farm, values_from = c(median, IQR, mean, sd), names_prefix = "farm_") %>% 
+  left_join(adj, by = "protein") %>% 
+  select(-c(pval, sig))
+
+# print table
+knitr::kable(sum)
+```
+
+| protein                                         | median\_farm\_1 | median\_farm\_2 | IQR\_farm\_1 | IQR\_farm\_2 | mean\_farm\_1 | mean\_farm\_2 | sd\_farm\_1 | sd\_farm\_2 |      padj |
+| :---------------------------------------------- | --------------: | --------------: | -----------: | -----------: | ------------: | ------------: | ----------: | ----------: | --------: |
+| 16S\_rRNA\_methyltransferases                   |       0.0000000 |               0 |    0.0000000 |    0.0000000 |     0.0309216 |     0.0212610 |   0.1323115 |   0.1279766 | 0.0425000 |
+| 23S\_rRNA\_methyltransferases                   |       0.0000000 |               0 |    0.0509730 |    0.0000000 |     0.0796005 |     0.0787008 |   0.1827057 |   0.2004140 | 0.0000000 |
+| Aminoglycoside\_O-phosphotransferases           |       0.0097070 |               0 |    0.0703389 |    0.0230695 |     0.0827141 |     0.0363395 |   0.1830912 |   0.0919702 | 0.0000000 |
+| Class\_A\_betalactamases                        |       0.0000000 |               0 |    0.0000000 |    0.0000000 |     0.0313945 |     0.0175315 |   0.1525016 |   0.1099037 | 0.0130769 |
+| Class\_B\_betalactamases                        |       0.0000000 |               0 |    0.0000000 |    0.0000000 |     0.0341897 |     0.0183991 |   0.1416332 |   0.1075469 | 0.0000000 |
+| Drug\_and\_biocide\_RND\_efflux\_pumps          |       0.0000000 |               0 |    0.0132188 |    0.0000000 |     0.0558194 |     0.0239299 |   0.1649132 |   0.1047371 | 0.0000000 |
+| MLS\_resistance\_ABC\_efflux\_pumps             |       0.0000000 |               0 |    0.1280914 |    0.0521572 |     0.0976780 |     0.0802149 |   0.1839002 |   0.1805745 | 0.0000000 |
+| Multi-biocide\_ABC\_efflux\_pump                |       0.0000000 |               0 |    0.0096316 |    0.0000000 |     0.0570699 |     0.0363381 |   0.1673507 |   0.1255296 | 0.0000000 |
+| Multi-biocide\_RND\_efflux\_pump                |       0.0000000 |               0 |    0.0000000 |    0.0000000 |     0.0467279 |     0.0176145 |   0.1611198 |   0.1048535 | 0.0000000 |
+| Multi-drug\_ABC\_efflux\_pumps                  |       0.0000000 |               0 |    0.0534582 |    0.0000000 |     0.0655053 |     0.0749633 |   0.1466797 |   0.1954580 | 0.0340000 |
+| Multi-drug\_RND\_efflux\_pumps                  |       0.0000000 |               0 |    0.0000000 |    0.0000000 |     0.0590809 |     0.0183988 |   0.1722372 |   0.1051113 | 0.0000000 |
+| Mupirocin-resistant\_isoleucyl-tRNA\_synthetase |       0.0024421 |               0 |    0.0577595 |    0.0160325 |     0.0772348 |     0.0640532 |   0.1666730 |   0.1700721 | 0.0130769 |
+| Para-aminosalicylic\_acid\_resistant\_mutant    |       0.0000000 |               0 |    0.1087074 |    0.0000000 |     0.0853541 |     0.0677343 |   0.1578868 |   0.2025623 | 0.0000000 |
+| Streptothricin\_acetyltransferase               |       0.0000000 |               0 |    0.0340065 |    0.0000000 |     0.0530855 |     0.0043774 |   0.1653840 |   0.0287047 | 0.0000000 |
+| Tellurium\_resistance\_protein                  |       0.0000000 |               0 |    0.0000000 |    0.0000000 |     0.0372383 |     0.0001202 |   0.1762108 |   0.0013655 | 0.0340000 |
+| Tetracycline\_resistance\_MFS\_efflux\_pumps    |       0.0000000 |               0 |    0.0000000 |    0.0000000 |     0.0371465 |     0.0273027 |   0.1429913 |   0.1218001 | 0.0000000 |
 
 ``` r
 # visualize the major trends
@@ -333,9 +272,47 @@ ggplot(data = sigs, aes(x = farm, y = median, group = protein)) +
           subtitle = paste0("n = (", length(which(adj$sig == TRUE)), ")"))
 ```
 
-<img src="statAnalysis_files/figure-markdown_github/unnamed-chunk-6-1.png" style="display: block; margin: auto;" />
+<img src="statAnalysis_files/figure-gfm/unnamed-chunk-9-1.png" style="display: block; margin: auto;" />
 
-**Resistance Type**
+There are 16 proteins with significant differences, so that’s difficult
+to visualize on one plot.
+
+``` r
+## plot all data (not just  median)
+
+# get significant data
+allsig <- adj %>% 
+  filter(sig == "TRUE") %>% 
+  left_join(counts, by = "protein") %>% 
+  mutate(farm = factor(farm))
+
+# plot
+ggplot(data = allsig, aes(x = farm, y = relabun, fill = farm)) +
+  geom_violin() +
+  geom_point(position = position_dodge2(width = 0.5), size = 0.3) +
+  facet_wrap(~protein) +
+  labs(x = "Farm", y = "Relative Abundance", title = "Relative abundance of significant proteins")
+```
+
+<img src="statAnalysis_files/figure-gfm/unnamed-chunk-10-1.png" style="display: block; margin: auto;" />
+
+Visualize with density plots; this shows that most of the proteins have
+marginally higher relative abundance in farm 1.
+
+``` r
+# get significant data
+sigrel <- counts %>% 
+  semi_join(filter(adj, padj < 0.05), by = "protein")
+
+# plot with ggpubr
+ggdensity(sigrel, x = "relabun", y = "..count..", add = "median", 
+          color = "farm", fill = "farm", rug = TRUE) +
+  facet_wrap(~protein, scales = "free")
+```
+
+<img src="statAnalysis_files/figure-gfm/unnamed-chunk-11-1.png" style="display: block; margin: auto;" />
+
+#### Resistance Type
 
 ``` r
 outsig <- data.frame()
@@ -368,9 +345,55 @@ sigs <- adj %>%
             IQR = IQR(relabun)) %>% 
   ungroup() %>% 
   mutate(farm = factor(farm))
+
+## write summary statistics to table
+sum <- sigs %>% 
+  pivot_wider(names_from = farm, values_from = c(median, IQR)) %>% 
+  # add p value
+  left_join(adj, by = "type") %>% 
+  select(-c(pval, sig))
+#write.table(sum, "/Users/epb5360/git/amr-brazil/data/results-tables/wilcox-types.txt", sep = "\t", row.names = FALSE)
 ```
 
-There are 14 significantly different resistance types; again, the plot shows that most are only present in one of the two farms.
+There are 14 significantly different resistance types; again, the plot
+shows that most are only present in one of the two farms.
+
+``` r
+# summary statistics on significant genes
+sum <- adj %>% 
+  filter(sig == "TRUE") %>% 
+  left_join(counts, by = "type") %>% 
+  group_by(farm, type) %>% 
+  summarize(median = median(relabun),
+            IQR = IQR(relabun),
+            mean = mean(relabun),
+            sd = sd(relabun)) %>% 
+  ungroup() %>% 
+  pivot_wider(names_from = farm, values_from = c(median, IQR, mean, sd), names_prefix = "farm_") %>% 
+  left_join(adj, by = "type") %>% 
+  select(-c(pval, sig))
+
+# print table
+
+knitr::kable(sum)
+```
+
+| type                                       | median\_farm\_1 | median\_farm\_2 | IQR\_farm\_1 | IQR\_farm\_2 | mean\_farm\_1 | mean\_farm\_2 | sd\_farm\_1 | sd\_farm\_2 |      padj |
+| :----------------------------------------- | --------------: | --------------: | -----------: | -----------: | ------------: | ------------: | ----------: | ----------: | --------: |
+| Aminoglycosides                            |       0.0000336 |               0 |    0.1141168 |    0.0680577 |     0.1139073 |     0.0860095 |   0.2286553 |   0.1787539 | 0.0000000 |
+| betalactams                                |       0.0000000 |               0 |    0.0000000 |    0.0000000 |     0.0314342 |     0.0121345 |   0.1508087 |   0.0896989 | 0.0000000 |
+| Drug\_and\_biocide\_resistance             |       0.0000000 |               0 |    0.0000000 |    0.0000000 |     0.0421138 |     0.0181552 |   0.1549526 |   0.1032013 | 0.0000000 |
+| Glycopeptides                              |       0.0000000 |               0 |    0.0000000 |    0.0000000 |     0.0411861 |     0.0318189 |   0.1466645 |   0.1353008 | 0.0000000 |
+| MLS                                        |       0.0000000 |               0 |    0.0345729 |    0.0000000 |     0.0794274 |     0.0657229 |   0.1913855 |   0.1783858 | 0.0000000 |
+| Multi-biocide\_resistance                  |       0.0000000 |               0 |    0.0000000 |    0.0000000 |     0.0454174 |     0.0158222 |   0.1639115 |   0.0930139 | 0.0000000 |
+| Multi-drug\_resistance                     |       0.0000000 |               0 |    0.0000000 |    0.0000000 |     0.0560412 |     0.0488867 |   0.1613654 |   0.1654866 | 0.0000000 |
+| Multi-metal\_resistance                    |       0.0000000 |               0 |    0.0000000 |    0.0000000 |     0.0386289 |     0.0278699 |   0.1478089 |   0.1279490 | 0.0274615 |
+| Mupirocin                                  |       0.0024421 |               0 |    0.0577595 |    0.0160325 |     0.0772348 |     0.0640532 |   0.1666730 |   0.1700721 | 0.0046364 |
+| Mycobacterium\_tuberculosis-specific\_Drug |       0.0000000 |               0 |    0.0000000 |    0.0000000 |     0.0381180 |     0.0266663 |   0.1400829 |   0.1318297 | 0.0000000 |
+| Nucleosides                                |       0.0000000 |               0 |    0.0340065 |    0.0000000 |     0.0530855 |     0.0043774 |   0.1653840 |   0.0287047 | 0.0000000 |
+| Tellurium\_resistance                      |       0.0000000 |               0 |    0.0000000 |    0.0000000 |     0.0372383 |     0.0001202 |   0.1762108 |   0.0013655 | 0.0127500 |
+| Tetracyclines                              |       0.0000000 |               0 |    0.0021114 |    0.0000000 |     0.0699916 |     0.0549477 |   0.1853600 |   0.1515760 | 0.0000000 |
+| Trimethoprim                               |       0.0000000 |               0 |    0.0000000 |    0.0000000 |     0.0228799 |     0.0058738 |   0.1435111 |   0.0698217 | 0.0291429 |
 
 ``` r
 # visualize the major trends
@@ -384,13 +407,138 @@ ggplot(data = sigs, aes(x = farm, y = median, group = type)) +
           subtitle = paste0("n = (", length(which(adj$sig == TRUE)), ")"))
 ```
 
-<img src="statAnalysis_files/figure-markdown_github/unnamed-chunk-8-1.png" style="display: block; margin: auto;" />
+<img src="statAnalysis_files/figure-gfm/unnamed-chunk-14-1.png" style="display: block; margin: auto;" />
+
+``` r
+## plot all data (not just  median)
+
+# get significant data
+allsig <- adj %>% 
+  filter(sig == "TRUE") %>% 
+  left_join(counts, by = "type") %>% 
+  mutate(farm = factor(farm))
+
+# plot
+ggplot(data = allsig, aes(x = farm, y = relabun, fill = farm)) +
+  geom_violin() +
+  geom_point(position = position_dodge2(width = 0.5), size = 0.3) +
+  facet_wrap(~type) +
+  labs(x = "Farm", y = "Relative Abundance", title = "Relative abundance of significant resistance type")
+```
+
+<img src="statAnalysis_files/figure-gfm/unnamed-chunk-15-1.png" style="display: block; margin: auto;" />
+
+#### Resistance Class
+
+``` r
+outsig <- data.frame()
+for(i in 1:length(classes)) {
+  
+  w <- wilcox.test(relabun ~ farm, data = filter(counts, broadclass == classes[i]),
+                   exact = FALSE)
+  
+  outsig[i, "class"] <- classes[i]
+  outsig[i, "pval"] <- round(w$p.value, 3)
+  
+}
+
+# adjust p values for false discovery rate
+adj <- outsig %>% 
+  mutate(
+    # adjust p values with FDR
+    padj = p.adjust(pval, method = "fdr", n = length(outsig$pval)),
+    # Boolean for significance
+    sig = case_when(
+      padj < 0.05 ~ TRUE,
+      padj >= 0.05 ~ FALSE))
+
+# get only significant variables and add median + IQR
+sigs <- adj %>% 
+  filter(sig == "TRUE") %>% 
+  left_join(counts, by = c("class" = "broadclass")) %>% 
+  group_by(farm, class) %>% 
+  summarize(median = median(relabun),
+            IQR = IQR(relabun)) %>% 
+  ungroup() %>% 
+  mutate(farm = factor(farm))
+
+## write summary statistics to table
+sum <- sigs %>% 
+  pivot_wider(names_from = farm, values_from = c(median, IQR)) %>% 
+  # add p value
+  left_join(adj, by = "class") %>% 
+  select(-c(pval, sig))
+#write.table(sum, "/Users/epb5360/git/amr-brazil/data/results-tables/wilcox-class.txt", sep = "\t", row.names = FALSE)
+```
+
+There are 4 significantly different resistance types.
+
+``` r
+# summary statistics on significant genes
+sum <- adj %>% 
+  filter(sig == "TRUE") %>% 
+  left_join(counts, by = c("class" = "broadclass")) %>% 
+  group_by(farm, class) %>% 
+  summarize(median = median(relabun),
+            IQR = IQR(relabun),
+            mean = mean(relabun),
+            sd = sd(relabun)) %>% 
+  ungroup() %>% 
+  pivot_wider(names_from = farm, values_from = c(median, IQR, mean, sd), names_prefix = "farm_") %>% 
+  left_join(adj, by = "class") %>% 
+  select(-c(pval, sig))
+
+
+# print table
+knitr::kable(sum)
+```
+
+| class          | median\_farm\_1 | median\_farm\_2 | IQR\_farm\_1 | IQR\_farm\_2 | mean\_farm\_1 | mean\_farm\_2 | sd\_farm\_1 | sd\_farm\_2 |  padj |
+| :------------- | --------------: | --------------: | -----------: | -----------: | ------------: | ------------: | ----------: | ----------: | ----: |
+| Biocides       |               0 |               0 |            0 |            0 |     0.0419351 |     0.0120948 |   0.1627921 |   0.0782484 | 0.000 |
+| Drugs          |               0 |               0 |            0 |            0 |     0.0577865 |     0.0437536 |   0.1728195 |   0.1477930 | 0.000 |
+| Metals         |               0 |               0 |            0 |            0 |     0.0370398 |     0.0255965 |   0.1462375 |   0.1261878 | 0.001 |
+| Multi-compound |               0 |               0 |            0 |            0 |     0.0412593 |     0.0171020 |   0.1558914 |   0.0971461 | 0.000 |
+
+``` r
+# visualize the major trends
+ggplot(data = sigs, aes(x = farm, y = median, group = class)) +
+  geom_point() +
+  geom_jitter() +
+  geom_line() +
+  theme_bw() +
+  labs(x = "Farm", y = "Median Relative Abundance") +
+  ggtitle("Significantly different classes by farm",
+          subtitle = paste0("n = (", length(which(adj$sig == TRUE)), ")"))
+```
+
+<img src="statAnalysis_files/figure-gfm/unnamed-chunk-18-1.png" style="display: block; margin: auto;" />
+
+``` r
+## plot all data (not just  median)
+
+# get significant data
+allsig <- adj %>% 
+  filter(sig == "TRUE") %>% 
+  left_join(counts, by = c("class" = "broadclass")) %>% 
+  mutate(farm = factor(farm))
+
+# plot
+ggplot(data = allsig, aes(x = farm, y = relabun, fill = farm)) +
+  geom_violin() +
+  geom_point(position = position_dodge2(width = 0.5), size = 0.3) +
+  facet_wrap(~type) +
+  labs(x = "Farm", y = "Relative Abundance", title = "Relative abundance of significant resistance class")
+```
+
+<img src="statAnalysis_files/figure-gfm/unnamed-chunk-19-1.png" style="display: block; margin: auto;" />
 
 ### Comparisons between body sites
 
-Kruskal-Wallis test for non-parametric comparisons between the 3 body sites, stratified by farm.
+Kruskal-Wallis test for non-parametric comparisons between the 3 body
+sites, stratified by farm.
 
-**Genes**
+#### Genes
 
 ``` r
 ## Stratify for each farm
@@ -447,11 +595,56 @@ sigs <- adj %>% filter(sig == "TRUE") %>%
   ungroup() %>% 
   mutate(site = factor(site),
          farm = factor(farm))
+
+## write summary statistics to table
+sum <- sigs %>% 
+  left_join(adj, by = c("pattern", "farm")) %>% 
+  select(-c(pval, sig)) %>% 
+  pivot_wider(names_from = site, values_from = c(median, IQR))
+  
+#write.table(sum, "/Users/epb5360/git/amr-brazil/data/results-tables/kruskal-genes.txt", sep = "\t", row.names = FALSE)
 ```
 
-There are 345 significant genes between body sites.
+There are 345 significant genes between body sites. The p values and
+summary statistics are not printed since there are so many.
 
-This plot visualizes the differences; most are higher in feces, then rumen, then SNP. However, one gene is higher in SNP.
+``` r
+# summary statistics on significant genes
+sumfarm1 <- adj %>% 
+  filter(sig == "TRUE" & farm == 1) %>% 
+  left_join(counts, by = c("pattern", "farm")) %>% 
+  group_by(site, pattern) %>% 
+  summarize(median = median(relabun),
+            IQR = IQR(relabun),
+            mean = mean(relabun),
+            sd = sd(relabun)) %>% 
+  ungroup() %>% 
+  pivot_wider(names_from = site, values_from = c(median, IQR, mean, sd)) %>% 
+  left_join(adj, by = "pattern") %>% 
+  select(-c(pval, sig))
+
+# print table
+#knitr::kable(sumfarm1)
+
+sumfarm2 <- adj %>% 
+  filter(sig == "TRUE" & farm == 2) %>% 
+  left_join(counts, by = c("pattern", "farm")) %>% 
+  group_by(site, pattern) %>% 
+  summarize(median = median(relabun),
+            IQR = IQR(relabun),
+            mean = mean(relabun),
+            sd = sd(relabun)) %>% 
+  ungroup() %>% 
+  pivot_wider(names_from = site, values_from = c(median, IQR, mean, sd)) %>% 
+  left_join(adj, by = "pattern") %>% 
+  select(-c(pval, sig))
+
+# print table
+#knitr::kable(sumfarm2)
+```
+
+This plot visualizes the differences; most are higher in feces, then
+rumen, then SNP. However, one gene is higher in SNP.
 
 ``` r
 # visualize the major trends
@@ -466,9 +659,9 @@ ggplot(data = sigs, aes(x = site, y = median, group = pattern)) +
   facet_wrap(~ farm)
 ```
 
-<img src="statAnalysis_files/figure-markdown_github/unnamed-chunk-10-1.png" style="display: block; margin: auto;" />
+<img src="statAnalysis_files/figure-gfm/unnamed-chunk-22-1.png" style="display: block; margin: auto;" />
 
-**Proteins**
+#### Proteins
 
 ``` r
 ## Stratify for each farm
@@ -525,6 +718,52 @@ sigs <- adj %>% filter(sig == "TRUE") %>%
   ungroup() %>% 
   mutate(site = factor(site),
          farm = factor(farm))
+
+## write summary statistics to table
+## write summary statistics to table
+sum <- sigs %>% 
+  left_join(adj, by = c("protein", "farm")) %>% 
+  select(-c(pval, sig)) %>% 
+  pivot_wider(names_from = site, values_from = c(median, IQR)) %>% 
+  arrange(farm)
+#write.table(sum, "/Users/epb5360/git/amr-brazil/data/results-tables/kruskal-proteins.txt", sep = "\t", row.names = FALSE)
+```
+
+There are 117 significant proteins in the dataset.
+
+``` r
+# summary statistics on significant genes
+sumfarm1 <- adj %>% 
+  filter(sig == "TRUE" & farm == 1) %>% 
+  left_join(counts, by = c("protein", "farm")) %>% 
+  group_by(site, protein) %>% 
+  summarize(median = median(relabun),
+            IQR = IQR(relabun),
+            mean = mean(relabun),
+            sd = sd(relabun)) %>% 
+  ungroup() %>% 
+  pivot_wider(names_from = site, values_from = c(median, IQR, mean, sd)) %>% 
+  left_join(adj, by = "protein") %>% 
+  select(-c(pval, sig))
+
+# print table
+#knitr::kable(sumfarm1)
+
+sumfarm2 <- adj %>% 
+  filter(sig == "TRUE" & farm == 2) %>% 
+  left_join(counts, by = c("protein", "farm")) %>% 
+  group_by(site, protein) %>% 
+  summarize(median = median(relabun),
+            IQR = IQR(relabun),
+            mean = mean(relabun),
+            sd = sd(relabun)) %>% 
+  ungroup() %>% 
+  pivot_wider(names_from = site, values_from = c(median, IQR, mean, sd)) %>% 
+  left_join(adj, by = "protein") %>% 
+  select(-c(pval, sig))
+
+# print table
+#knitr::kable(sumfarm2)
 ```
 
 ``` r
@@ -540,9 +779,9 @@ ggplot(data = sigs, aes(x = site, y = median, group = protein)) +
   facet_wrap(~ farm)
 ```
 
-<img src="statAnalysis_files/figure-markdown_github/unnamed-chunk-12-1.png" style="display: block; margin: auto;" />
+<img src="statAnalysis_files/figure-gfm/unnamed-chunk-25-1.png" style="display: block; margin: auto;" />
 
-**Resistance Type**
+#### Resistance Type
 
 ``` r
 ## Stratify for each farm
@@ -599,6 +838,52 @@ sigs <- adj %>% filter(sig == "TRUE") %>%
   ungroup() %>% 
   mutate(site = factor(site),
          farm = factor(farm))
+
+## write summary statistics to table
+## write summary statistics to table
+sum <- sigs %>% 
+  left_join(adj, by = c("type", "farm")) %>% 
+  select(-c(pval, sig)) %>% 
+  pivot_wider(names_from = site, values_from = c(median, IQR)) %>% 
+  arrange(farm)
+#write.table(sum, "/Users/epb5360/git/amr-brazil/data/results-tables/kruskal-types.txt", sep = "\t", row.names = FALSE)
+```
+
+There are 44 significant proteins in the dataset.
+
+``` r
+# summary statistics on significant genes
+sumfarm1 <- adj %>% 
+  filter(sig == "TRUE" & farm == 1) %>% 
+  left_join(counts, by = c("type", "farm")) %>% 
+  group_by(site, type) %>% 
+  summarize(median = median(relabun),
+            IQR = IQR(relabun),
+            mean = mean(relabun),
+            sd = sd(relabun)) %>% 
+  ungroup() %>% 
+  pivot_wider(names_from = site, values_from = c(median, IQR, mean, sd)) %>% 
+  left_join(adj, by = "type") %>% 
+  select(-c(pval, sig))
+
+# print table
+#knitr::kable(sumfarm1)
+
+sumfarm2 <- adj %>% 
+  filter(sig == "TRUE" & farm == 2) %>% 
+  left_join(counts, by = c("type", "farm")) %>% 
+  group_by(site, type) %>% 
+  summarize(median = median(relabun),
+            IQR = IQR(relabun),
+            mean = mean(relabun),
+            sd = sd(relabun)) %>% 
+  ungroup() %>% 
+  pivot_wider(names_from = site, values_from = c(median, IQR, mean, sd)) %>% 
+  left_join(adj, by = "type") %>% 
+  select(-c(pval, sig))
+
+# print table
+#knitr::kable(sumfarm2)
 ```
 
 ``` r
@@ -609,9 +894,129 @@ ggplot(data = sigs, aes(x = site, y = median, group = type)) +
   geom_line() +
   theme_bw() +
   labs(x = "Body Site", y = "Median Relative Abundance") +
-  ggtitle("Significantly different proteins by site & farm",
+  ggtitle("Significantly different types by site & farm",
           subtitle = paste0("n = (", length(which(adj$sig == TRUE)), ")")) +
   facet_wrap(~ farm)
 ```
 
-<img src="statAnalysis_files/figure-markdown_github/unnamed-chunk-14-1.png" style="display: block; margin: auto;" />
+<img src="statAnalysis_files/figure-gfm/unnamed-chunk-28-1.png" style="display: block; margin: auto;" />
+
+#### Class
+
+``` r
+## Stratify for each farm
+counts <- counts %>% mutate(farm = factor(farm))
+farms <- levels(counts$farm)
+# create empty dataframe to fill within the loop
+outsig <- data.frame()
+
+for(j in 1:length(farms)) {
+  
+  # iterate through all 666 genes
+  for(i in 1:length(classes)) {
+    
+    # perform Kruskal-Wallis test
+    k <- kruskal.test(relabun ~ site, data = filter(counts, broadclass == classes[i] &
+                                                      farm == farms[j]))
+    
+   
+    # some farms do not have the gene present; mark as 'absent'
+    if(is.na(k$p.value)) {
+      
+      pvaldat <- NA
+      
+    } else {
+      
+      pvaldat <- round(k$p.value, 3)
+      
+    } 
+        
+    # collect variables to output DF
+    outsig <- rbind(outsig,
+                    data.frame(farm = farms[j],
+                               class = classes[i],
+                               pval = pvaldat))
+  }
+}
+
+# adjust p vals for multiple comparisons with false discovery rate
+adj <- outsig %>% 
+  mutate(
+    # adjust p values with FDR
+    padj = p.adjust(pval, method = "fdr", n = length(outsig$pval)),
+    # Boolean for significance
+    sig = case_when(
+      padj < 0.05 ~ TRUE,
+      padj >= 0.05 ~ FALSE))
+ 
+# get genes that had a significant difference
+sigs <- adj %>% filter(sig == "TRUE") %>%  
+  left_join(counts, by = c("class" = "broadclass", "farm")) %>% 
+  group_by(site, class, farm) %>% 
+  summarize(median = median(relabun),
+            IQR = IQR(relabun)) %>% 
+  ungroup() %>% 
+  mutate(site = factor(site),
+         farm = factor(farm))
+
+## write summary statistics to table
+## write summary statistics to table
+sum <- sigs %>% 
+  left_join(adj, by = c("class", "farm")) %>% 
+  select(-c(pval, sig)) %>% 
+  pivot_wider(names_from = site, values_from = c(median, IQR)) %>% 
+  arrange(farm)
+#write.table(sum, "/Users/epb5360/git/amr-brazil/data/results-tables/kruskal-class.txt", sep = "\t", row.names = FALSE)
+```
+
+There are 4 significant classes in the dataset.
+
+``` r
+# summary statistics on significant genes
+sumfarm1 <- adj %>% 
+  filter(sig == "TRUE" & farm == 1) %>% 
+  left_join(counts, by = c("class" = "broadclass", "farm")) %>% 
+  group_by(site, class) %>% 
+  summarize(median = median(relabun),
+            IQR = IQR(relabun),
+            mean = mean(relabun),
+            sd = sd(relabun)) %>% 
+  ungroup() %>% 
+  pivot_wider(names_from = site, values_from = c(median, IQR, mean, sd)) %>% 
+  left_join(adj, by = "class") %>% 
+  select(-c(pval, sig))
+
+# print table
+#knitr::kable(sumfarm1)
+
+sumfarm2 <- adj %>% 
+  filter(sig == "TRUE" & farm == 2) %>% 
+  left_join(counts, by = c("class" = "broadclass", "farm")) %>% 
+  group_by(site, class) %>% 
+  summarize(median = median(relabun),
+            IQR = IQR(relabun),
+            mean = mean(relabun),
+            sd = sd(relabun)) %>% 
+  ungroup() %>% 
+  pivot_wider(names_from = site, values_from = c(median, IQR, mean, sd)) %>% 
+  left_join(adj, by = "class") %>% 
+  select(-c(pval, sig))
+
+# print table
+#knitr::kable(sumfarm2)
+```
+
+``` r
+# visualize the major trends
+ggplot(data = sigs, aes(x = site, y = median, group = class)) +
+  geom_point() +
+  geom_jitter() +
+  geom_line() +
+  theme_bw() +
+  labs(x = "Body Site", y = "Median Relative Abundance") +
+  ggtitle("Significantly different classes by site & farm",
+          subtitle = paste0("n = (", length(which(adj$sig == TRUE)), ")")) +
+  facet_wrap(~ farm)
+```
+
+<img src="statAnalysis_files/figure-gfm/unnamed-chunk-31-1.png" style="display: block; margin: auto;" />
