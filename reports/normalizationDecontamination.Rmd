@@ -22,11 +22,15 @@ There are 3 negative controls (2 DNA extraction controls & 1 PCR control) and 1 
 require(phyloseq)
 require(ggplot2)
 require(tidyverse) 
-require(decontam)
 require(vegan)
 
+if(!require(decontam)) {
+  BiocManager::install("decontam")
+  require(decontam)
+} 
+
 # load data
-load("~/git/amr-brazil/R/genecountsENV.RData")
+load("./R/genecountsENV.RData")
 
 # set ggplot theme
 theme_set(theme_bw())
@@ -78,7 +82,7 @@ tax <- sampcounts %>%
     # protein
     protein = sapply(str_split(pattern, "\\|"), `[`, 3),
     # gene
-    gene = sapply(str_split(pattern, "\\|"), `[`, 4),
+    gene = sapply(str_split(pattern, "\\|"), `[`, 4)
     ) %>% 
   column_to_rownames(var = "pattern")
 tax <- as.matrix(tax)
@@ -219,7 +223,7 @@ len <- countsDF %>% select(pattern, genelen) %>%
   summarize(genelen = min(genelen))
 
 # read table with sequencing depth info
-seqs <- read.table("/Users/epb5360/git/amr-brazil/data/sampleDepth.txt", stringsAsFactors = FALSE, header = TRUE, sep = "\t") %>% 
+seqs <- read.table("./data/sampleDepth.txt", stringsAsFactors = FALSE, header = TRUE, sep = "\t") %>% 
   rename(names = name,
          nreads = length)
 
@@ -258,6 +262,63 @@ norm <- counts %>%
 
 # calculate presence/absence
 
+# calculate presence/absence
+presab <- norm %>% 
+  mutate(presence = case_when(
+    normseqdepth == 0 ~ 0,
+    normseqdepth != 0 ~ 1
+  )) %>% 
+  select(-normseqdepth)
+
+# make horizontal by each gene
+presabh <- presab %>% 
+  pivot_wider(names_from = pattern, values_from = presence)
+
+# calculate total presence for each gene
+sums <- colSums(presabh %>% select(-names))
+
+
+# add grouping variables
+prestotal <- presab %>% 
+  rename(name = names) %>% 
+  mutate(
+    ## MEGARES 
+    # resistance class
+    broadclass = sapply(str_split(pattern, "\\|"), `[`, 1),
+    # type of resistance
+    type = sapply(str_split(pattern, "\\|"), `[`, 2),
+    # protein
+    protein = sapply(str_split(pattern, "\\|"), `[`, 3),
+    # gene
+    gene = sapply(str_split(pattern, "\\|"), `[`, 4),
+    ## SAMPLE METADATA
+    # farm number
+    farm = case_when(
+      # if the sample is a control, name it "control"
+      str_detect(name, controls) ~ "control",
+      # otherwise, detect the farm number
+      !str_detect(name, controls) ~ str_remove(str_extract(name, "P(\\d)"), "P")
+    ),
+    # animal number
+    animal = case_when(
+      # if the sample is a control, name it "control"
+      str_detect(name, controls) ~ "control",
+      # otherwise, detect the animal number
+      !str_detect(name, controls) ~ str_remove(str_extract(name, "A(\\d{1,2})"), "A")
+    ),
+    # sample number - this does NOT matter if it's control or not
+    samplenum = sapply(str_split(name, "_"), `[`, 2),
+    # body site
+    site = case_when(
+      # if the sample is a control, name it "control"
+      str_detect(name, controls) ~ "control",
+      # otherwise, detect the animal number
+      !str_detect(name, controls) ~ sapply(str_split(name, "_"), `[`, 4)
+    )
+    # close mutate() parenthesis
+  )
+
+
 # calculate relative abundance
 
 # make the dataframe horizontal to calculate relative abundance
@@ -270,6 +331,79 @@ normh <- norm %>%
 relabun <- decostand(normh, method = "range", MARGIN = 2) %>% 
   # bring back the names column
   rownames_to_column(var = "name")
+
+
+```
+
+
+Remove genes that are only present in one sample, and re-calculate relative abundance
+
+```{r}
+
+# which genes are only present in one sample
+
+bysamp <- pres %>% 
+  select(pattern, name, presence) %>% 
+  pivot_wider(names_from = pattern, values_from = presence)
+  
+patsum <- colSums(bysamp[2:ncol(bysamp)]) 
+
+# subset for only one sample with presence
+ones <- names(patsum[patsum == 1])
+
+# filter the data to remove samples only in one 
+filt <- norm %>% 
+  pivot_wider(names_from = pattern, values_from = normseqdepth) %>% 
+  select(-ones) %>% 
+  column_to_rownames(var = "names")
+
+# get remaining patterns
+pats <- names(patsum[patsum > 1])
+
+# calculate relative abundance on filtered data
+relfilt <- decostand(filt, method = "range", MARGIN = 2) %>% 
+  # bring back the names column
+  rownames_to_column(var = "name")
+
+# make vertical for analysis
+relfiltv <- relfilt %>% 
+  pivot_longer(cols = pats, names_to = "pattern", values_to = "relabun") %>% 
+  mutate(
+    ## MEGARES 
+    # resistance class
+    broadclass = sapply(str_split(pattern, "\\|"), `[`, 1),
+    # type of resistance
+    type = sapply(str_split(pattern, "\\|"), `[`, 2),
+    # protein
+    protein = sapply(str_split(pattern, "\\|"), `[`, 3),
+    # gene
+    gene = sapply(str_split(pattern, "\\|"), `[`, 4),
+    ## SAMPLE METADATA
+    # farm number
+    farm = case_when(
+      # if the sample is a control, name it "control"
+      str_detect(name, controls) ~ "control",
+      # otherwise, detect the farm number
+      !str_detect(name, controls) ~ str_remove(str_extract(name, "P(\\d)"), "P")
+    ),
+    # animal number
+    animal = case_when(
+      # if the sample is a control, name it "control"
+      str_detect(name, controls) ~ "control",
+      # otherwise, detect the animal number
+      !str_detect(name, controls) ~ str_remove(str_extract(name, "A(\\d{1,2})"), "A")
+    ),
+    # sample number - this does NOT matter if it's control or not
+    samplenum = sapply(str_split(name, "_"), `[`, 2),
+    # body site
+    site = case_when(
+      # if the sample is a control, name it "control"
+      str_detect(name, controls) ~ "control",
+      # otherwise, detect the animal number
+      !str_detect(name, controls) ~ sapply(str_split(name, "_"), `[`, 4)
+    )
+    # close mutate() parenthesis
+  )
 
 
 ```

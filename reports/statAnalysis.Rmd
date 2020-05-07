@@ -19,7 +19,7 @@ require(ggpubr)
 # read in data
 counts <- read.table("https://github.com/EmilyB17/amr-brazil/blob/master/data/parsedRelativeAbundanceNoContams.txt?raw=true", sep = "\t", header = TRUE)
 
-counts <- read.table("~/git/amr-brazil/data/parsedRelativeAbundanceNoContams.txt", sep = "\t",
+counts <- read.table("https://github.com/EmilyB17/amr-brazil/blob/master/data/parsedRelativeAbundanceNoContams.txt?raw=true", sep = "\t",
                     header = TRUE)
 
 # set ggplot2 theme
@@ -31,6 +31,14 @@ types <- unique(counts$type)
 proteins <- unique(counts$protein)
 genes <- unique(counts$gene)
 patterns <- unique(counts$pattern)
+
+```
+
+
+```{r}
+
+## use presence/absence to remove genes only present in 1 sample
+
 
 ```
 
@@ -73,7 +81,7 @@ exp <- counts %>%
 
 ```
 
-```{r}
+```{#r}
 
 # data is not normally distributed and is very zero-skewed
 hist(counts$relabun, main = "Histogram of Relative Abundance",

@@ -1,63 +1,55 @@
 
-# calculate presence/absence
-presab <- norm %>% 
-  mutate(presence = case_when(
-    normseqdepth == 0 ~ 0,
-    normseqdepth != 0 ~ 1
-  )) %>% 
-  select(-normseqdepth)
 
-# make horizontal by each gene
-presabh <- presab %>% 
-  pivot_wider(names_from = pattern, values_from = presence)
+## run normalizationDecontam RMD
+counts = relfiltv
 
-# calculate total presence for each gene
-sums <- colSums(presabh %>% select(-names))
+patterns <- unique(relfiltv$pattern)
+# Wilcox rank-sum for pairwise differences between farms
 
+# create empty df to fill in the loop
+outsig <- data.frame()
+# loop through all 666 genes
+for(i in 1:length(patterns)) {
+  
+  # perform wilcox test
+  w <- wilcox.test(relabun ~ farm, data = filter(counts, pattern == patterns[i]),
+                   exact = FALSE)
+  
+  # get output p value
+  outsig[i, "pattern"] <- patterns[i]
+  outsig[i, "pval"] <- round(w$p.value, 3)
+  
+}
 
-# add grouping variables
-prestotal <- presab %>% 
-  rename(name = names) %>% 
+# adjust p values for false discovery rate
+adj <- outsig %>% 
   mutate(
-    ## MEGARES 
-    # resistance class
-    broadclass = sapply(str_split(pattern, "\\|"), `[`, 1),
-    # type of resistance
-    type = sapply(str_split(pattern, "\\|"), `[`, 2),
-    # protein
-    protein = sapply(str_split(pattern, "\\|"), `[`, 3),
-    # gene
-    gene = sapply(str_split(pattern, "\\|"), `[`, 4),
-    ## SAMPLE METADATA
-    # farm number
-    farm = case_when(
-      # if the sample is a control, name it "control"
-      str_detect(name, controls) ~ "control",
-      # otherwise, detect the farm number
-      !str_detect(name, controls) ~ str_remove(str_extract(name, "P(\\d)"), "P")
-    ),
-    # animal number
-    animal = case_when(
-      # if the sample is a control, name it "control"
-      str_detect(name, controls) ~ "control",
-      # otherwise, detect the animal number
-      !str_detect(name, controls) ~ str_remove(str_extract(name, "A(\\d{1,2})"), "A")
-    ),
-    # sample number - this does NOT matter if it's control or not
-    samplenum = sapply(str_split(name, "_"), `[`, 2),
-    # body site
-    site = case_when(
-      # if the sample is a control, name it "control"
-      str_detect(name, controls) ~ "control",
-      # otherwise, detect the animal number
-      !str_detect(name, controls) ~ sapply(str_split(name, "_"), `[`, 4)
-    )
-    # close mutate() parenthesis
-  )
+    # adjust p values with FDR
+    padj = p.adjust(pval, method = "fdr", n = length(outsig$pval)),
+    # Boolean for significance
+    sig = case_when(
+      padj < 0.05 ~ TRUE,
+      padj >= 0.05 ~ FALSE))
 
+# get only significant variables and add median + IQR
+sigs <- adj %>% 
+  filter(sig == "TRUE") %>% 
+  left_join(counts, by = "pattern") %>% 
+  # add presence/absence
+  mutate(presence = case_when(
+    relabun == 0 ~ 0,
+    relabun != 0 ~ 1
+  )) %>% 
+  group_by(farm, pattern, broadclass, type, protein, gene) %>% 
+  summarize(median = median(relabun),
+            IQR = IQR(relabun),
+            prestotal = sum(presence)) %>% 
+  ungroup() %>% 
+  mutate(farm = factor(farm))
 
-
-
-f <- prestotal %>% 
-  group_by(pattern, farm) %>% 
-  summarize(count = sum(presence))
+## write summary statistics to table
+sum <- sigs %>% 
+  pivot_wider(names_from = farm, values_from = c(median, IQR, prestotal)) %>% 
+  # add p value
+  left_join(adj, by = "pattern") %>% 
+  select(-c(pattern, pval, sig))
