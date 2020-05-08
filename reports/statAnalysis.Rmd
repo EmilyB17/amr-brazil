@@ -17,10 +17,7 @@ require(ggplot2)
 require(ggpubr)
 
 # read in data
-counts <- read.table("https://github.com/EmilyB17/amr-brazil/blob/master/data/parsedRelativeAbundanceNoContams.txt?raw=true", sep = "\t", header = TRUE)
-
-counts <- read.table("https://github.com/EmilyB17/amr-brazil/blob/master/data/parsedRelativeAbundanceNoContams.txt?raw=true", sep = "\t",
-                    header = TRUE)
+counts <- read.table("~/git/amr-brazil/data/parsedRelativeAbundanceNoContams.txt", sep = "\t", header = TRUE)
 
 # set ggplot2 theme
 theme_set(theme_bw())
@@ -35,12 +32,6 @@ patterns <- unique(counts$pattern)
 ```
 
 
-```{r}
-
-## use presence/absence to remove genes only present in 1 sample
-
-
-```
 
 ## Analysis Structure
 
@@ -71,7 +62,7 @@ Resistance class: SNP vs Rumen vs Feces (Farm 1 and Farm 2)
 
 ```{r}
 
-# in the entire dataset, there are 174 unique proteins in 3 classes
+# in the entire dataset, there are 147 unique proteins in 3 classes
 exp <- counts %>% 
   group_by(broadclass, type, protein) %>% 
   summarize()
@@ -81,7 +72,7 @@ exp <- counts %>%
 
 ```
 
-```{#r}
+```{r}
 
 # data is not normally distributed and is very zero-skewed
 hist(counts$relabun, main = "Histogram of Relative Abundance",
@@ -137,12 +128,18 @@ sigs <- adj %>%
   summarize(median = median(relabun),
             IQR = IQR(relabun),
             prestotal = sum(presence)) %>% 
+  # calculate presence/absence per sample since groups had unequal sample size 
+  mutate(persamp.pres = case_when(
+    farm == 1 ~ prestotal / 48,
+    farm == 2 ~ prestotal /43
+  )) %>% 
+  
   ungroup() %>% 
   mutate(farm = factor(farm))
 
 ## write summary statistics to table
 sum <- sigs %>% 
-  pivot_wider(names_from = farm, values_from = c(median, IQR, prestotal)) %>% 
+  pivot_wider(names_from = farm, values_from = c(median, IQR, prestotal, persamp.pres)) %>% 
   # add p value
   left_join(adj, by = "pattern") %>% 
   select(-c(pattern, pval, sig))
@@ -166,24 +163,6 @@ ggbarplot(sigs, x = "gene", y = "prestotal",
 ```
 
 
-This plot shows all genes between farms; most decrease from farm 1 to farm 2.
-
-```{r}
-
-# visualize the major trends
-ggplot(data = sigs, aes(x = farm, y = median, group = gene)) +
-  geom_point() +
-  geom_jitter() +
-  geom_line() +
-  theme_bw() +
-  labs(x = "Farm", y = "Median Relative Abundance") +
-  ggtitle("Significantly different genes by farm",
-          subtitle = paste0("n = (", length(which(adj$sig == TRUE)), ")"))
-
-```
-
-
-The data is so zero-skewed that it can be misleading to plot just the median and IQR, so below is a plot of whole dataset in the significant genes.
 
 ```{r}
 
@@ -244,12 +223,18 @@ sigs <- adj %>%
   summarize(median = median(relabun),
             IQR = IQR(relabun),
             prestotal = sum(presence)) %>% 
+  # calculate presence/absence per sample since groups had unequal sample size 
+  mutate(persamp.pres = case_when(
+    farm == 1 ~ prestotal / 48,
+    farm == 2 ~ prestotal /43
+  )) %>% 
+  
   ungroup() %>% 
   mutate(farm = factor(farm))
 
 ## write summary statistics to table
 sum <- sigs %>% 
-  pivot_wider(names_from = farm, values_from = c(median, IQR, prestotal)) %>% 
+  pivot_wider(names_from = farm, values_from = c(median, IQR, prestotal, persamp.pres)) %>% 
   # add p value
   left_join(adj, by = "protein") %>% 
   select(-c(pval, sig))
@@ -272,22 +257,6 @@ ggplot(data = sigs, aes(x = protein, y = prestotal, fill = farm)) +
 
 ```
 
-
-
-
-```{r}
-
-# visualize the major trends
-ggplot(data = sigs, aes(x = farm, y = median, group = protein)) +
-  geom_point() +
-  geom_jitter() +
-  geom_line() +
-  theme_bw() +
-  labs(x = "Farm", y = "Median Relative Abundance") +
-  ggtitle("Significantly different proteins by farm",
-          subtitle = paste0("n = (", length(which(adj$sig == TRUE)), ")"))
-
-```
 
 
 There are 16 proteins with significant differences, so that's difficult to visualize on one plot. 
@@ -318,7 +287,8 @@ Visualize with density plots; this shows that most of the proteins have marginal
 
 # get significant data
 sigrel <- counts %>% 
-  semi_join(filter(adj, padj < 0.05), by = "protein")
+  semi_join(filter(adj, padj < 0.05), by = "protein") %>% 
+  mutate(farm = factor(farm))
 
 # plot with ggpubr
 ggdensity(sigrel, x = "relabun", y = "..count..", add = "median", 
@@ -366,12 +336,18 @@ sigs <- adj %>%
   summarize(median = median(relabun),
             IQR = IQR(relabun),
             prestotal = sum(presence)) %>% 
+   # calculate presence/absence per sample since groups had unequal sample size 
+  mutate(persamp.pres = case_when(
+    farm == 1 ~ prestotal / 48,
+    farm == 2 ~ prestotal /43
+  )) %>% 
+  
   ungroup() %>% 
   mutate(farm = factor(farm))
 
 ## write summary statistics to table
 sum <- sigs %>% 
-  pivot_wider(names_from = farm, values_from = c(median, IQR, prestotal)) %>% 
+  pivot_wider(names_from = farm, values_from = c(median, IQR, prestotal, persamp.pres)) %>% 
   # add p value
   left_join(adj, by = "type") %>% 
   select(-c(pval, sig))
@@ -392,20 +368,6 @@ ggplot(data = sigs, aes(x = type, y = prestotal, fill = farm)) +
 ```
 
 
-
-```{r}
-
-# visualize the major trends
-ggplot(data = sigs, aes(x = farm, y = median, group = type)) +
-  geom_point() +
-  geom_jitter() +
-  geom_line() +
-  theme_bw() +
-  labs(x = "Farm", y = "Median Relative Abundance") +
-  ggtitle("Significantly different types by farm",
-          subtitle = paste0("n = (", length(which(adj$sig == TRUE)), ")"))
-
-```
 
 
 ```{r}
@@ -467,12 +429,17 @@ sigs <- adj %>%
   summarize(median = median(relabun),
             IQR = IQR(relabun),
             prestotal = sum(presence)) %>% 
+     # calculate presence/absence per sample since groups had unequal sample size 
+  mutate(persamp.pres = case_when(
+    farm == 1 ~ prestotal / 48,
+    farm == 2 ~ prestotal /43
+  )) %>% 
   ungroup() %>% 
   mutate(farm = factor(farm))
 
 ## write summary statistics to table
 sum <- sigs %>% 
-  pivot_wider(names_from = farm, values_from = c(median, IQR, prestotal)) %>% 
+  pivot_wider(names_from = farm, values_from = c(median, IQR, prestotal, persamp.pres)) %>% 
   # add p value
   left_join(adj, by = "class") %>% 
   select(-c(pval, sig))
@@ -491,20 +458,6 @@ ggplot(data = sigs, aes(x = class, y = prestotal, fill = farm)) +
 
 ```
 
-
-```{r}
-
-# visualize the major trends
-ggplot(data = sigs, aes(x = farm, y = median, group = class)) +
-  geom_point() +
-  geom_jitter() +
-  geom_line() +
-  theme_bw() +
-  labs(x = "Farm", y = "Median Relative Abundance") +
-  ggtitle("Significantly different classes by farm",
-          subtitle = paste0("n = (", length(which(adj$sig == TRUE)), ")"))
-
-```
 
 
 ```{r}
@@ -592,6 +545,11 @@ sigs <- adj %>% filter(sig == "TRUE") %>%
   summarize(median = median(relabun),
             IQR = IQR(relabun),
             prestotal = sum(presence)) %>% 
+      # calculate presence/absence per sample since groups had unequal sample size 
+  mutate(persamp.pres = case_when(
+    farm == 1 ~ prestotal / 48,
+    farm == 2 ~ prestotal /43
+  )) %>% 
   ungroup() %>% 
   mutate(site = factor(site),
          farm = factor(farm))
@@ -600,7 +558,7 @@ sigs <- adj %>% filter(sig == "TRUE") %>%
 sum <- sigs %>% 
   left_join(adj, by = c("pattern", "farm")) %>% 
   select(-c(pval, sig)) %>% 
-  pivot_wider(names_from = site, values_from = c(median, IQR, prestotal)) %>% 
+  pivot_wider(names_from = site, values_from = c(median, IQR, prestotal, persamp.pres)) %>% 
   select(-pattern) %>% 
   arrange(farm)
   
@@ -610,6 +568,28 @@ sum <- sigs %>%
 
 There are `r length(unique(sigs$pattern))` significant genes between body sites. The p values and summary statistics are not printed since there are so many.
 
+Therefore, it may be more helpful to analyze this data in terms of the fewer genes that had higher prevalence in rumen or SNP, than fecal.
+
+```{r}
+
+## confirm if there are any standout genes that are higher in either rumen or SNP compared to fecal
+s <- sum %>% 
+  select(-c(starts_with("median"), starts_with("IQR"), padj, starts_with("persamp"))) %>% 
+  # subtract gene presence of feces - rumen, SNP
+  mutate(diff.fecrum = prestotal_feces - prestotal_rumen,
+         diff.fecSNP = prestotal_feces - prestotal_SNP,
+         diff.rumSNP = prestotal_rumen - prestotal_SNP) %>% 
+  pivot_longer(cols = starts_with("diff."), names_to = "diff", values_to = "value")
+
+# get negative values
+negs <- filter(s, value < 0) %>% 
+  pivot_wider(names_from = diff, values_from = value)
+
+# write to table
+write.table(negs, "./data/results-tables/site-genes-differences.txt", sep = "\t", row.names = FALSE)
+
+
+```
 
 
 
@@ -671,6 +651,17 @@ for(j in 1:length(farms)) {
   }
 }
 
+
+# adjust p vals for multiple comparisons with false discovery rate
+adj <- outsig %>% 
+  mutate(
+    # adjust p values with FDR
+    padj = p.adjust(pval, method = "fdr", n = length(outsig$pval)),
+    # Boolean for significance
+    sig = case_when(
+      padj < 0.05 ~ TRUE,
+      padj >= 0.05 ~ FALSE))
+ 
 # get genes that had a significant difference
 sigs <- adj %>% filter(sig == "TRUE") %>%  
   left_join(counts, by = c("protein", "farm")) %>% 
@@ -683,6 +674,11 @@ sigs <- adj %>% filter(sig == "TRUE") %>%
   summarize(median = median(relabun),
             IQR = IQR(relabun),
             prestotal = sum(presence)) %>% 
+      # calculate presence/absence per sample since groups had unequal sample size 
+  mutate(persamp.pres = case_when(
+    farm == 1 ~ prestotal / 48,
+    farm == 2 ~ prestotal /43
+  )) %>% 
   ungroup() %>% 
   mutate(site = factor(site),
          farm = factor(farm))
@@ -691,7 +687,7 @@ sigs <- adj %>% filter(sig == "TRUE") %>%
 sum <- sigs %>% 
   left_join(adj, by = c("protein", "farm")) %>% 
   select(-c(pval, sig)) %>% 
-  pivot_wider(names_from = site, values_from = c(median, IQR, prestotal)) %>% 
+  pivot_wider(names_from = site, values_from = c(median, IQR, prestotal, persamp.pres)) %>% 
   arrange(farm)
  
 #write.table(sum, "/Users/epb5360/git/amr-brazil/data/results-tables/kruskal-proteins.txt", sep = "\t", row.names = FALSE)
@@ -781,6 +777,11 @@ sigs <- adj %>% filter(sig == "TRUE") %>%
   summarize(median = median(relabun),
             IQR = IQR(relabun),
             prestotal = sum(presence)) %>% 
+     # calculate presence/absence per sample since groups had unequal sample size 
+  mutate(persamp.pres = case_when(
+    farm == 1 ~ prestotal / 48,
+    farm == 2 ~ prestotal /43
+  )) %>% 
   ungroup() %>% 
   mutate(site = factor(site),
          farm = factor(farm))
@@ -789,7 +790,7 @@ sigs <- adj %>% filter(sig == "TRUE") %>%
 sum <- sigs %>% 
   left_join(adj, by = c("type", "farm")) %>% 
   select(-c(pval, sig)) %>% 
-  pivot_wider(names_from = site, values_from = c(median, IQR, prestotal)) %>% 
+  pivot_wider(names_from = site, values_from = c(median, IQR, prestotal, persamp.pres)) %>% 
   arrange(farm)
  
 #write.table(sum, "/Users/epb5360/git/amr-brazil/data/results-tables/kruskal-types.txt", sep = "\t", row.names = FALSE)
@@ -880,6 +881,11 @@ sigs <- adj %>% filter(sig == "TRUE") %>%
   summarize(median = median(relabun),
             IQR = IQR(relabun),
             prestotal = sum(presence)) %>% 
+      # calculate presence/absence per sample since groups had unequal sample size 
+  mutate(persamp.pres = case_when(
+    farm == 1 ~ prestotal / 48,
+    farm == 2 ~ prestotal /43
+  )) %>% 
   ungroup() %>% 
   mutate(site = factor(site),
          farm = factor(farm))
@@ -888,7 +894,7 @@ sigs <- adj %>% filter(sig == "TRUE") %>%
 sum <- sigs %>% 
   left_join(adj, by = c("class", "farm")) %>% 
   select(-c(pval, sig)) %>% 
-  pivot_wider(names_from = site, values_from = c(median, IQR, prestotal)) %>% 
+  pivot_wider(names_from = site, values_from = c(median, IQR, prestotal, persamp.pres)) %>% 
   arrange(farm)
 #write.table(sum, "/Users/epb5360/git/amr-brazil/data/results-tables/kruskal-class.txt", sep = "\t", row.names = FALSE)
 
@@ -898,42 +904,6 @@ sum <- sigs %>%
 
 There are `r length(unique(sigs$class))` significant classes in the dataset.
 
-```{r}
-
-# summary statistics on significant genes
-sumfarm1 <- adj %>% 
-  filter(sig == "TRUE" & farm == 1) %>% 
-  left_join(counts, by = c("class" = "broadclass", "farm")) %>% 
-  group_by(site, class) %>% 
-  summarize(median = median(relabun),
-            IQR = IQR(relabun),
-            mean = mean(relabun),
-            sd = sd(relabun)) %>% 
-  ungroup() %>% 
-  pivot_wider(names_from = site, values_from = c(median, IQR, mean, sd)) %>% 
-  left_join(adj, by = "class") %>% 
-  select(-c(pval, sig))
-
-# print table
-#knitr::kable(sumfarm1)
-
-sumfarm2 <- adj %>% 
-  filter(sig == "TRUE" & farm == 2) %>% 
-  left_join(counts, by = c("class" = "broadclass", "farm")) %>% 
-  group_by(site, class) %>% 
-  summarize(median = median(relabun),
-            IQR = IQR(relabun),
-            mean = mean(relabun),
-            sd = sd(relabun)) %>% 
-  ungroup() %>% 
-  pivot_wider(names_from = site, values_from = c(median, IQR, mean, sd)) %>% 
-  left_join(adj, by = "class") %>% 
-  select(-c(pval, sig))
-
-# print table
-#knitr::kable(sumfarm2)
-
-```
 
 
 ```{r}
