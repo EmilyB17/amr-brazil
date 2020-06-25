@@ -30,7 +30,7 @@ if(!require(decontam)) {
 } 
 
 # load data
-load("./R/genecountsENV.RData")
+#load("./R/genecountsENV.RData")
 
 # set ggplot theme
 theme_set(theme_bw())
@@ -260,7 +260,7 @@ norm <- counts %>%
   # keep only final normalization
   select(pattern, names, normseqdepth)
 
-# calculate presence/absence
+
 
 # calculate presence/absence
 presab <- norm %>% 
@@ -270,80 +270,17 @@ presab <- norm %>%
   )) %>% 
   select(-normseqdepth)
 
-# make horizontal by each gene
-presabh <- presab %>% 
-  pivot_wider(names_from = pattern, values_from = presence)
-
-# calculate total presence for each gene
-sums <- colSums(presabh %>% select(-names))
-
-
-# add grouping variables
-prestotal <- presab %>% 
-  rename(name = names) %>% 
-  mutate(
-    ## MEGARES 
-    # resistance class
-    broadclass = sapply(str_split(pattern, "\\|"), `[`, 1),
-    # type of resistance
-    type = sapply(str_split(pattern, "\\|"), `[`, 2),
-    # protein
-    protein = sapply(str_split(pattern, "\\|"), `[`, 3),
-    # gene
-    gene = sapply(str_split(pattern, "\\|"), `[`, 4),
-    ## SAMPLE METADATA
-    # farm number
-    farm = case_when(
-      # if the sample is a control, name it "control"
-      str_detect(name, controls) ~ "control",
-      # otherwise, detect the farm number
-      !str_detect(name, controls) ~ str_remove(str_extract(name, "P(\\d)"), "P")
-    ),
-    # animal number
-    animal = case_when(
-      # if the sample is a control, name it "control"
-      str_detect(name, controls) ~ "control",
-      # otherwise, detect the animal number
-      !str_detect(name, controls) ~ str_remove(str_extract(name, "A(\\d{1,2})"), "A")
-    ),
-    # sample number - this does NOT matter if it's control or not
-    samplenum = sapply(str_split(name, "_"), `[`, 2),
-    # body site
-    site = case_when(
-      # if the sample is a control, name it "control"
-      str_detect(name, controls) ~ "control",
-      # otherwise, detect the animal number
-      !str_detect(name, controls) ~ sapply(str_split(name, "_"), `[`, 4)
-    )
-    # close mutate() parenthesis
-  )
-
-
-# calculate relative abundance
-
-# make the dataframe horizontal to calculate relative abundance
-normh <- norm %>% 
-  pivot_wider(names_from = pattern, values_from = normseqdepth, values_fill = list(normseqdepth = 0)) %>% 
-  # decostand() requires a matrix, so make the names into rownames
-  column_to_rownames(var = "names")
-
-# calculate relative abundance
-relabun <- decostand(normh, method = "range", MARGIN = 2) %>% 
-  # bring back the names column
-  rownames_to_column(var = "name")
-
-
 ```
 
 
-Remove genes that are only present in one sample, and re-calculate relative abundance
+Remove genes that are only present in one sample (n = 117), and re-calculate relative abundance on remaining genes (n=549). Finally, we can use the metadata encoded in gene ID and sample name to get important grouping variables for downstream analysis. 
 
 ```{r}
 
 # which genes are only present in one sample
 
-bysamp <- pres %>% 
-  select(pattern, name, presence) %>% 
+bysamp <- presab %>% 
+  select(pattern, names, presence) %>% 
   pivot_wider(names_from = pattern, values_from = presence)
   
 patsum <- colSums(bysamp[2:ncol(bysamp)]) 
@@ -354,7 +291,7 @@ ones <- names(patsum[patsum == 1])
 # filter the data to remove samples only in one 
 filt <- norm %>% 
   pivot_wider(names_from = pattern, values_from = normseqdepth) %>% 
-  select(-ones) %>% 
+  select(-all_of(ones)) %>% 
   column_to_rownames(var = "names")
 
 # get remaining patterns
@@ -367,7 +304,7 @@ relfilt <- decostand(filt, method = "range", MARGIN = 2) %>%
 
 # make vertical for analysis
 relfiltv <- relfilt %>% 
-  pivot_longer(cols = pats, names_to = "pattern", values_to = "relabun") %>% 
+  pivot_longer(cols = all_of(pats), names_to = "pattern", values_to = "relabun") %>% 
   mutate(
     ## MEGARES 
     # resistance class
@@ -408,57 +345,13 @@ relfiltv <- relfilt %>%
 
 ```
 
-Finally, we can use the metadata encoded in gene ID and sample name to get important grouping variables for downstream analysis. 
 
-```{r}
-
-# parse out name into metadata
-relv <- relabun %>% 
-  pivot_longer(cols = -name, names_to = "pattern", values_to = "relabun") %>% 
-  mutate(
-    ## MEGARES 
-    # resistance class
-    broadclass = sapply(str_split(pattern, "\\|"), `[`, 1),
-    # type of resistance
-    type = sapply(str_split(pattern, "\\|"), `[`, 2),
-    # protein
-    protein = sapply(str_split(pattern, "\\|"), `[`, 3),
-    # gene
-    gene = sapply(str_split(pattern, "\\|"), `[`, 4),
-    ## SAMPLE METADATA
-    # farm number
-    farm = case_when(
-      # if the sample is a control, name it "control"
-      str_detect(name, controls) ~ "control",
-      # otherwise, detect the farm number
-      !str_detect(name, controls) ~ str_remove(str_extract(name, "P(\\d)"), "P")
-    ),
-    # animal number
-    animal = case_when(
-      # if the sample is a control, name it "control"
-      str_detect(name, controls) ~ "control",
-      # otherwise, detect the animal number
-      !str_detect(name, controls) ~ str_remove(str_extract(name, "A(\\d{1,2})"), "A")
-    ),
-    # sample number - this does NOT matter if it's control or not
-    samplenum = sapply(str_split(name, "_"), `[`, 2),
-    # body site
-    site = case_when(
-      # if the sample is a control, name it "control"
-      str_detect(name, controls) ~ "control",
-      # otherwise, detect the animal number
-      !str_detect(name, controls) ~ sapply(str_split(name, "_"), `[`, 4)
-    )
-  # close mutate() parenthesis
-  )
-
-```
 
 ```{#r}
 
 # write this table to file
 
-write.table(relv, file = "~/git/amr-brazil/data/parsedRelativeAbundanceNoContams.txt", sep = "\t",
+write.table(relfiltv, file = "~/git/amr-brazil/data/parsedRelativeAbundanceNoContams.txt", sep = "\t",
             row.names = FALSE)
 
 ```

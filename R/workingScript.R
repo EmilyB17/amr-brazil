@@ -1,55 +1,89 @@
 
+### PLOTS FROM STATISTICAL ANALYSIS
+# sample sizes are uneven; 48 farm 1, 43 farm 2-- need to use per sample average
 
-## run normalizationDecontam RMD
-counts = relfiltv
+require(RColorBrewer)
 
-patterns <- unique(relfiltv$pattern)
-# Wilcox rank-sum for pairwise differences between farms
+# define function for standard error
+se <- function(x) {sqrt(stats::var(x)/length(x))}
 
-# create empty df to fill in the loop
-outsig <- data.frame()
-# loop through all 666 genes
-for(i in 1:length(patterns)) {
-  
-  # perform wilcox test
-  w <- wilcox.test(relabun ~ farm, data = filter(counts, pattern == patterns[i]),
-                   exact = FALSE)
-  
-  # get output p value
-  outsig[i, "pattern"] <- patterns[i]
-  outsig[i, "pval"] <- round(w$p.value, 3)
-  
-}
+## ---- ALL DATA ----
 
-# adjust p values for false discovery rate
-adj <- outsig %>% 
-  mutate(
-    # adjust p values with FDR
-    padj = p.adjust(pval, method = "fdr", n = length(outsig$pval)),
-    # Boolean for significance
-    sig = case_when(
-      padj < 0.05 ~ TRUE,
-      padj >= 0.05 ~ FALSE))
-
-# get only significant variables and add median + IQR
-sigs <- adj %>% 
-  filter(sig == "TRUE") %>% 
-  left_join(counts, by = "pattern") %>% 
-  # add presence/absence
-  mutate(presence = case_when(
+# get presence/absence
+pres <- counts %>% 
+  mutate(pres = case_when(
     relabun == 0 ~ 0,
     relabun != 0 ~ 1
-  )) %>% 
-  group_by(farm, pattern, broadclass, type, protein, gene) %>% 
-  summarize(median = median(relabun),
-            IQR = IQR(relabun),
-            prestotal = sum(presence)) %>% 
-  ungroup() %>% 
-  mutate(farm = factor(farm))
+  ))
 
-## write summary statistics to table
-sum <- sigs %>% 
-  pivot_wider(names_from = farm, values_from = c(median, IQR, prestotal)) %>% 
-  # add p value
-  left_join(adj, by = "pattern") %>% 
-  select(-c(pattern, pval, sig))
+# calculate per sample average count
+tot <- pres %>% 
+  group_by(farm, broadclass) %>% 
+  summarize(sum = sum(pres),
+            ster = se(pres),
+            sd = sd(pres)) %>% 
+  mutate(avg = case_when(
+    farm == 1 ~ sum / 48,
+    farm == 2 ~ sum / 43
+  )) %>% 
+  ungroup() %>% 
+  mutate(Farm = factor(farm))
+
+# plot by resistance class
+p <- ggbarplot(tot, x = "broadclass", y = "avg", fill = "Farm",  position = position_dodge()) + 
+  scale_fill_brewer(palette = "Set2") +
+  labs(x = "Resistance Class", y = "Average gene prevalence")
+
+# save plot
+ggexport(p, filename = "./data/plots/avg-presence-barplot-byfarm.jpg")
+
+## ---- pie chart ----
+
+## pie chart of gene prevalence heterogeneity
+df <- pres %>% 
+  group_by(pattern, broadclass) %>% 
+  summarize(tot = sum(pres)) %>% 
+  mutate(num =
+           case_when(
+             tot < 5 ~ "< 5",
+             tot %in% 5:20 ~ "5 - 20",
+             tot %in% 21:50 ~ "21 - 50",
+             tot > 51 ~ "> 51"
+           )) %>% 
+  mutate(num = factor(num, ordered = TRUE,
+                      levels = c("< 5", "5 - 20", "21 - 50", "> 51")))
+
+# make chart
+ggplot(data = df, aes(x = '',  fill = num)) +
+  geom_bar(width = 1) +
+  coord_polar("y", start = 0) +
+  theme_void() +
+  scale_fill_brewer(palette = "Set2") +
+  labs(fill = "Gene Representation")
+
+
+## ---- multi biocide resistance ----
+
+# important proteins - ABC and RND efflux pumps
+prots <- paste("Multi-biocide_ABC_efflux_pump", "Multi-biocide_RND_efflux_pump", sep = "|")
+
+tot <- pres %>% 
+  filter(str_detect(protein, prots)) %>% 
+  group_by(farm, protein) %>% 
+  summarize(sum = sum(pres),
+            ster = se(pres),
+            sd = sd(pres)) %>% 
+  mutate(avg = case_when(
+    farm == 1 ~ sum / 48,
+    farm == 2 ~ sum / 43
+  )) %>% 
+  ungroup() %>% 
+  mutate(Farm = factor(farm)) %>% 
+  recode(protein,
+         c(Multi-biocide_ABC_efflux_pump = "ABC efflux pump",
+         Multi-biocide_RND_efflux_pump = "RND efflux pump"))
+
+
+ggbarplot(tot, x = "protein", y = "avg", fill = "Farm",  position = position_dodge()) + 
+  scale_fill_brewer(palette = "Set2") +
+  labs(x = "Resistance Class", y = "Average gene prevalence")

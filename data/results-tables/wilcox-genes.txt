@@ -1,0 +1,13 @@
+"broadclass"	"type"	"protein"	"gene"	"median_1"	"median_2"	"IQR_1"	"IQR_2"	"prestotal_1"	"prestotal_2"	"persamp.pres_1"	"persamp.pres_2"	"padj"
+"Biocides"	"Multi-biocide_resistance"	"Multi-biocide_RND_efflux_pump"	"EMHB"	0.0371428146865457	0	0.093128911191941	0	29	8	0.604166666666667	0.186046511627907	0.04575
+"Drugs"	"betalactams"	"Class_A_betalactamases"	"ROB"	0	0	0	0	11	0	0.229166666666667	0	0.04575
+"Drugs"	"MLS"	"Lincosamide_nucleotidyltransferases"	"LNUB"	0	0	0.0147288148561167	0	12	0	0.25	0	0
+"Drugs"	"Multi-drug_resistance"	"Multi-drug_ABC_efflux_pumps"	"LSAE"	0	0	0.0147288148561167	0	12	0	0.25	0	0
+"Drugs"	"Multi-drug_resistance"	"Multi-drug_RND_efflux_pumps"	"MUXB"	0.0681037944872669	0	0.175780286634836	0	29	4	0.604166666666667	0.0930232558139535	0
+"Drugs"	"Multi-drug_resistance"	"Multi-drug_RND_efflux_pumps"	"MUXC"	0	0	0.216190658644491	0	22	4	0.458333333333333	0.0930232558139535	0.04575
+"Drugs"	"Mupirocin"	"Mupirocin-resistant_isoleucyl-tRNA_synthetase"	"MUPB"	0	0	0.0406808812254242	0	14	1	0.291666666666667	0.0232558139534884	0.04575
+"Drugs"	"Nucleosides"	"Streptothricin_acetyltransferase"	"SAT"	0	0	0.0340064726886513	0	16	1	0.333333333333333	0.0232558139534884	0
+"Metals"	"Multi-metal_resistance"	"Multi-metal_RND_efflux_pumps"	"CZCP"	0	0	0.135807600296593	0	21	2	0.4375	0.0465116279069767	0
+"Multi-compound"	"Drug_and_biocide_resistance"	"Drug_and_biocide_MFS_efflux_pumps"	"KDEA"	0	0	0	0	11	0	0.229166666666667	0	0.04575
+"Multi-compound"	"Drug_and_biocide_resistance"	"Drug_and_biocide_RND_efflux_pumps"	"MEXY"	0	0	0.186328866171371	0	14	1	0.291666666666667	0.0232558139534884	0.04575
+"Multi-compound"	"Drug_and_biocide_resistance"	"Drug_and_biocide_RND_efflux_pumps"	"MTRD"	0	0	0	0	11	0	0.229166666666667	0	0.04575
