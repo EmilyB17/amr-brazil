@@ -123,3 +123,42 @@ upset(f2,
 )
 
 
+## ---- all data with pattern in columns ----
+
+# need: pattern as rowname, spread by sites
+
+dat1 <- dat %>% 
+  # make column for farm & site
+  mutate(farm1 = case_when(
+    farm %in% 1 ~ "A",
+    farm %in% 2 ~ "B"
+  )) %>% 
+  mutate(farmsite = paste0("farm", farm1, "-", site)) %>% 
+  # summarize by farmsite
+  group_by(farmsite, pattern) %>% 
+  summarize(sumpres = sum(presence))  %>% 
+  ungroup() %>% 
+  # make binary
+  mutate(pres = case_when(
+    sumpres == 0 ~ "0",
+    sumpres != 0 ~ "1"
+  )) %>% 
+  mutate(pres = as.numeric(pres)) %>% 
+  # spread by farmsite
+  select(-sumpres) %>% 
+  pivot_wider(names_from = farmsite, values_from = pres) %>% 
+  column_to_rownames(var = "pattern")
+
+# make the upset plot
+# make the plot using UpsetR package
+upset(dat1, sets = c("farmA-SNP", "farmA-rumen", "farmA-feces",
+                     "farmB-SNP", "farmB-rumen", "farmB-feces"), keep.order = TRUE,
+      ## COLORS
+      # color of matrix shade and transparency (alpha)
+      shade.color = accentcols[1], shade.alpha = 0.5,
+      # barplot color
+      main.bar.color = accentcols[2],
+      # set bar color
+      sets.bar.color = "grey")
+
+
